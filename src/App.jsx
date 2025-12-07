@@ -1,7 +1,19 @@
 import React, { useState } from 'react';
-import Navbar from './components/Navbar/Navbar';
-import { QUINIELAS } from './data/quinielas';
 
+// Componentes
+import Navbar from './components/Navbar/Navbar';
+import Hero from './components/Hero/Hero';
+import Filters from './components/Filters/Filters';
+import ActivePoolsSection from './components/Sections/ActivePoolsSection';
+import ClosedPoolsSection from './components/Sections/ClosedPoolsSection';
+import MyParticipationsSection from './components/Sections/MyParticipationsSection';
+import Footer from './components/Footer/Footer';
+
+// Datos
+import { QUINIELAS } from './data/quiniela';
+
+// Constantes
+import { POOL_STATUS } from './constants/routes';
 
 const App = () => {
   const [currentSection, setCurrentSection] = useState('activas');
@@ -9,7 +21,12 @@ const App = () => {
   const [selectedLeague, setSelectedLeague] = useState('all');
   const [selectedSort, setSelectedSort] = useState('deadline');
 
-  // Filtrar quinielas según los criterios
+  /**
+   * Filtra las quinielas según los criterios:
+   * - Sección actual (activas, cerradas, participaciones)
+   * - Liga seleccionada
+   * - Opción de ordenamiento
+   */
   const filteredPools = () => {
     let pools = QUINIELAS.filter(p => {
       if (currentSection === 'activas') return p.status === POOL_STATUS.OPEN;
@@ -18,44 +35,58 @@ const App = () => {
       return false;
     });
 
-    // Filtrar por liga
+    // Filtrar por liga si está seleccionada
     if (selectedLeague !== 'all') {
       pools = pools.filter(p => p.leagueCode === selectedLeague);
     }
 
-    // Ordenar
+    // Ordenar según opción seleccionada
     pools.sort((a, b) => {
-      if (selectedSort === 'deadline') return new Date(a.deadline) - new Date(b.deadline);
-      if (selectedSort === 'newest') return b.id - a.id;
-      if (selectedSort === 'participants') return b.participants - a.participants;
+      if (selectedSort === 'deadline') {
+        return new Date(a.deadline) - new Date(b.deadline);
+      }
+      if (selectedSort === 'newest') {
+        return b.id - a.id;
+      }
+      if (selectedSort === 'participants') {
+        return b.participants - a.participants;
+      }
       return 0;
     });
 
     return pools;
   };
 
+  /**
+   * Maneja la participación en una quiniela
+   * En el futuro abrirá un modal
+   */
   const handleParticipate = (poolId) => {
     console.log('Participar en quiniela:', poolId);
-    // Aquí se abrirá el modal en una versión completa
+    // TODO: Abrir modal de participación
   };
 
+  /**
+   * Maneja la edición de una quiniela (solo admin)
+   */
   const handleEdit = (poolId) => {
     console.log('Editar quiniela:', poolId);
+    // TODO: Abrir modal de edición
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
+      {/* Barra de navegación */}
       <Navbar
         currentSection={currentSection}
         onSectionChange={setCurrentSection}
         isAdminMode={isAdminMode}
       />
 
-      {/* Hero Section */}
+      {/* Sección Hero - Solo visible en sección de activas */}
       {currentSection === 'activas' && <Hero />}
 
-      {/* Filters */}
+      {/* Panel de filtros */}
       <Filters
         selectedLeague={selectedLeague}
         onLeagueChange={setSelectedLeague}
@@ -65,9 +96,10 @@ const App = () => {
         onAdminModeToggle={() => setIsAdminMode(!isAdminMode)}
       />
 
-      {/* Main Content */}
+      {/* Contenido principal */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4">
+          {/* Sección Quinielas Activas */}
           {currentSection === 'activas' && (
             <ActivePoolsSection
               pools={filteredPools()}
@@ -77,27 +109,26 @@ const App = () => {
             />
           )}
 
+          {/* Sección Resultados Cerrados */}
           {currentSection === 'cerradas' && (
-            <div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-8">
-                📊 Resultados Publicados
-              </h2>
-              <p className="text-gray-600">Sección de resultados - Próximamente</p>
-            </div>
+            <ClosedPoolsSection
+              pools={filteredPools()}
+              onEdit={handleEdit}
+              isAdminMode={isAdminMode}
+            />
           )}
 
+          {/* Sección Mis Participaciones */}
           {currentSection === 'participaciones' && (
-            <div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-8">
-                📜 Mis Participaciones
-              </h2>
-              <p className="text-gray-600">Sección de mis participaciones - Próximamente</p>
-            </div>
+            <MyParticipationsSection
+              pools={filteredPools()}
+              onViewResults={handleParticipate}
+            />
           )}
         </div>
       </section>
 
-      {/* Footer */}
+      {/* Pie de página */}
       <Footer />
     </div>
   );

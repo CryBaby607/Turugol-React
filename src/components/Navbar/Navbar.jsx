@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { TEXTS } from '../../constants/texts';
 import { SECTIONS } from '../../constants/routes';
-import './Navbar.module.css';
 
 const Navbar = ({ currentSection, onSectionChange, isAdminMode }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
