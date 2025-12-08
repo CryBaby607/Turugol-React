@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 
 // Componentes
 import Navbar from './components/Navbar/Navbar';
@@ -8,6 +9,8 @@ import ActivePoolsSection from './components/Sections/ActivePoolsSection';
 import ClosedPoolsSection from './components/Sections/ClosedPoolsSection';
 import MyParticipationsSection from './components/Sections/MyParticipationsSection';
 import Footer from './components/Footer/Footer';
+import Login from './pages/Login/login'; 
+import Register from './pages/Login/Register'; 
 
 // Datos
 import { QUINIELAS } from './data/quiniela';
@@ -15,11 +18,19 @@ import { QUINIELAS } from './data/quiniela';
 // Constantes
 import { POOL_STATUS } from './constants/routes';
 
-const App = () => {
+// Componente principal de la aplicación con navegación
+const QuinielaApp = ({ navigate }) => {
   const [currentSection, setCurrentSection] = useState('activas');
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState('all');
   const [selectedSort, setSelectedSort] = useState('deadline');
+
+  /**
+   * Maneja el clic en el botón de login
+   */
+  const handleLoginClick = () => {
+    navigate('/login');
+  };
 
   /**
    * Filtra las quinielas según los criterios:
@@ -76,11 +87,12 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Barra de navegación */}
+      {/* Barra de navegación con botón de login */}
       <Navbar
         currentSection={currentSection}
         onSectionChange={setCurrentSection}
         isAdminMode={isAdminMode}
+        onLoginClick={handleLoginClick}
       />
 
       {/* Sección Hero - Solo visible en sección de activas */}
@@ -131,6 +143,28 @@ const App = () => {
       {/* Pie de página */}
       <Footer />
     </div>
+  );
+};
+
+// Componente wrapper para usar useNavigate
+const QuinielaAppWithRouter = () => {
+  const navigate = useNavigate();
+  return <QuinielaApp navigate={navigate} />;
+};
+
+// Componente App principal con rutas
+const App = () => {
+  return (
+    <Router>
+      <Routes>
+        {/* Ruta para login */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        
+        {/* Ruta principal */}
+        <Route path="/*" element={<QuinielaAppWithRouter />} />
+      </Routes>
+    </Router>
   );
 };
 

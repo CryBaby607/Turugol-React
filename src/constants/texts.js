@@ -128,4 +128,23 @@ export const TEXTS = {
     filter: '🔍',
     clipboard: '📋',
   },
+
+  //Login
+  login: {
+    title: 'Bienvenido de nuevo',
+    subtitle: 'Ingresa tus credenciales para continuar',
+    emailLabel: 'Correo electrónico',
+    passwordLabel: 'Contraseña',
+    rememberMe: 'Recordar sesión',
+    forgotPassword: '¿Olvidaste tu contraseña?',
+    button: 'Iniciar Sesión',
+    noAccount: '¿No tienes una cuenta?',
+    register: 'Regístrate aquí',
+    socialLogin: 'O continúa con',
+    loading: 'Iniciando sesión...',
+    errorTitle: 'Error',
+    rights: 'Todos los derechos reservados.'
+  },
 };
+
+

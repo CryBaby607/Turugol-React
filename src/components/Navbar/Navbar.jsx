@@ -3,7 +3,7 @@ import { TEXTS } from '../../constants/texts';
 import { SECTIONS } from '../../constants/routes';
 import { HEX_COLORS, cn } from '../../constants/colors';
 
-const Navbar = ({ currentSection, onSectionChange, isAdminMode }) => {
+const Navbar = ({ currentSection, onSectionChange, isAdminMode, onLoginClick }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -19,6 +19,18 @@ const Navbar = ({ currentSection, onSectionChange, isAdminMode }) => {
   const handleSectionChange = (sectionId) => {
     onSectionChange(sectionId);
     setMobileMenuOpen(false);
+  };
+
+  // Función para manejar el clic en login
+  const handleLoginClick = () => {
+    if (onLoginClick) {
+      onLoginClick();
+    } else {
+      console.log('Mostrar login');
+      // Aquí puedes implementar la lógica para mostrar el login
+      // Por ejemplo, cambiar de sección o abrir un modal
+      onSectionChange('login');
+    }
   };
 
   // Estilo en línea usando HEX_COLORS para máxima flexibilidad
@@ -92,6 +104,26 @@ const Navbar = ({ currentSection, onSectionChange, isAdminMode }) => {
 
           {/* Side Actions */}
           <div className="flex items-center space-x-4">
+            {/* Botón de Iniciar Sesión - Desktop */}
+            <button
+              onClick={handleLoginClick}
+              className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors duration-200 shadow-md hover:shadow-lg"
+              style={{
+                backgroundColor: HEX_COLORS.success,
+                color: '#ffffff',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = HEX_COLORS.success + 'CC'; // Oscurecer
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = HEX_COLORS.success;
+              }}
+            >
+              <span className="text-lg">{TEXTS.icons.ticket || '🎟️'}</span>
+              <span className="hidden lg:inline">{TEXTS.login.button || 'Iniciar Sesión'}</span>
+              <span className="lg:hidden">Login</span>
+            </button>
+
             {isAdminMode && (
               <button 
                 className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors duration-200 shadow-md hover:shadow-lg"
@@ -150,6 +182,21 @@ const Navbar = ({ currentSection, onSectionChange, isAdminMode }) => {
                 )}
               </button>
             ))}
+            
+            {/* Botón de Iniciar Sesión - Mobile */}
+            <div className="pt-2">
+              <button
+                onClick={handleLoginClick}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold transition-colors duration-200"
+                style={{
+                  backgroundColor: HEX_COLORS.success,
+                  color: '#ffffff',
+                }}
+              >
+                <span className="text-lg">{TEXTS.icons.ticket || '🎟️'}</span>
+                {TEXTS.login.button || 'Iniciar Sesión'}
+              </button>
+            </div>
             
             {isAdminMode && (
               <div className="pt-4 border-t border-white/20">

@@ -1,12 +1,17 @@
 import React from 'react';
 import PoolsGrid from '../PoolsGrid/PoolsGrid';
 import { TEXTS } from '../../constants/texts';
+import { HEX_COLORS } from '../../constants/colors';
 
 const ActivePoolsSection = ({ pools, onParticipate, onEdit, isAdminMode }) => {
   return (
     <div>
-      <h2 className="text-3xl font-bold text-gray-800 mb-8">
-        {TEXTS.icons.target} {TEXTS.sections.activePoolsTitle}
+      <h2 
+        className="text-3xl font-bold mb-8"
+        style={{ color: HEX_COLORS.textDark }}
+      >
+        <span style={{ color: HEX_COLORS.primary }}>{TEXTS.icons.target}</span>{' '}
+        {TEXTS.sections.activePoolsTitle}
       </h2>
       <PoolsGrid
         pools={pools}

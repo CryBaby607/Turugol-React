@@ -1,21 +1,49 @@
 import React from 'react';
 import { TEXTS } from '../../constants/texts';
+import { COLOR_CLASSES, cn, HEX_COLORS } from '../../constants/colors';
 
 const MyParticipationsSection = ({ pools, onViewResults }) => {
   if (pools.length === 0) {
     return (
       <div>
-        <h2 className="text-3xl font-bold text-gray-800 mb-8">
-          {TEXTS.icons.history} {TEXTS.sections.myParticipationsTitle}
+        <h2 
+          className="text-3xl font-bold mb-8"
+          style={{ color: HEX_COLORS.textDark }}
+        >
+          <span style={{ color: HEX_COLORS.primary }}>{TEXTS.icons.history}</span>{' '}
+          {TEXTS.sections.myParticipationsTitle}
         </h2>
         <div className="text-center py-12">
-          <div className="text-5xl mb-4">📋</div>
-          <h3 className="text-xl font-semibold text-gray-600 mb-2">
+          <div 
+            className="text-5xl mb-4"
+            style={{ color: HEX_COLORS.primary }}
+          >
+            📋
+          </div>
+          <h3 
+            className="text-xl font-semibold mb-2"
+            style={{ color: HEX_COLORS.textDark }}
+          >
             {TEXTS.myParticipations.notParticipatedTitle}
           </h3>
-          <p className="text-gray-500 mb-6">{TEXTS.myParticipations.notParticipatedMsg}</p>
-          <button className="bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold px-6 py-3 rounded-lg">
-            {TEXTS.icons.target} {TEXTS.myParticipations.seeActivePoolsBtn}
+          <p 
+            className="mb-6"
+            style={{ color: HEX_COLORS.textLight }}
+          >
+            {TEXTS.myParticipations.notParticipatedMsg}
+          </p>
+          <button 
+            className={cn(
+              "text-white font-semibold px-6 py-3 rounded-lg",
+              COLOR_CLASSES.components.button.primary
+            )}
+            style={{
+              background: `linear-gradient(135deg, ${HEX_COLORS.primary}, ${HEX_COLORS.secondary})`,
+              border: 'none'
+            }}
+          >
+            <span style={{ marginRight: '8px' }}>{TEXTS.icons.target}</span>
+            {TEXTS.myParticipations.seeActivePoolsBtn}
           </button>
         </div>
       </div>
@@ -24,27 +52,56 @@ const MyParticipationsSection = ({ pools, onViewResults }) => {
 
   return (
     <div>
-      <h2 className="text-3xl font-bold text-gray-800 mb-8">
-        {TEXTS.icons.history} {TEXTS.sections.myParticipationsTitle}
+      <h2 
+        className="text-3xl font-bold mb-8"
+        style={{ color: HEX_COLORS.textDark }}
+      >
+        <span style={{ color: HEX_COLORS.primary }}>{TEXTS.icons.history}</span>{' '}
+        {TEXTS.sections.myParticipationsTitle}
       </h2>
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <div className={cn(
+        COLOR_CLASSES.components.card.elevated,
+        "p-6 mb-6"
+      )}>
         <div className="space-y-4">
           {pools.map((pool) => (
-            <div key={pool.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition">
+            <div 
+              key={pool.id} 
+              className={cn(
+                "rounded-lg p-4 hover:bg-gray-50 transition",
+                COLOR_CLASSES.borders.gray
+              )}
+            >
               <div className="flex justify-between items-center">
                 <div>
-                  <h4 className="font-bold text-lg">{pool.title}</h4>
-                  <div className="text-gray-600 text-sm">
+                  <h4 
+                    className="font-bold text-lg"
+                    style={{ color: HEX_COLORS.textDark }}
+                  >
+                    {pool.title}
+                  </h4>
+                  <div 
+                    className="text-sm"
+                    style={{ color: HEX_COLORS.textLight }}
+                  >
                     {TEXTS.icons.trophy} {pool.league}
                   </div>
                 </div>
                 <button
                   onClick={() => onViewResults(pool.id)}
-                  className={`${
-                    pool.status === 'closed'
-                      ? 'bg-blue-500 hover:bg-blue-600'
-                      : 'bg-green-500 hover:bg-green-600'
-                  } text-white font-semibold px-4 py-2 rounded-lg transition`}
+                  className={cn(
+                    "text-white font-semibold px-4 py-2 rounded-lg transition"
+                  )}
+                  style={{
+                    backgroundColor: pool.status === 'closed' ? HEX_COLORS.info : HEX_COLORS.success,
+                    border: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.opacity = '0.9';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.opacity = '1';
+                  }}
                 >
                   {pool.status === 'closed'
                     ? `${TEXTS.icons.chart} ${TEXTS.myParticipations.viewResults}`
@@ -57,16 +114,34 @@ const MyParticipationsSection = ({ pools, onViewResults }) => {
       </div>
 
       {/* Performance Card */}
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
+      <div 
+        className="rounded-xl p-6"
+        style={{
+          background: `linear-gradient(135deg, ${HEX_COLORS.success}10, ${HEX_COLORS.secondary}10)`,
+          border: `1px solid ${HEX_COLORS.success}30`
+        }}
+      >
         <div className="flex items-center mb-4">
-          <div className="bg-green-100 text-green-800 p-3 rounded-full mr-4">
+          <div 
+            className="p-3 rounded-full mr-4"
+            style={{
+              backgroundColor: HEX_COLORS.success + '20',
+              color: HEX_COLORS.success
+            }}
+          >
             {TEXTS.icons.chart}
           </div>
           <div>
-            <h4 className="font-bold text-lg text-gray-800">
+            <h4 
+              className="font-bold text-lg"
+              style={{ color: HEX_COLORS.textDark }}
+            >
               {TEXTS.myParticipations.generalPerformance}
             </h4>
-            <p className="text-gray-600 text-sm">
+            <p 
+              className="text-sm"
+              style={{ color: HEX_COLORS.textLight }}
+            >
               {TEXTS.myParticipations.basedOnRecent}
             </p>
           </div>
@@ -74,20 +149,60 @@ const MyParticipationsSection = ({ pools, onViewResults }) => {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-800">2</div>
-            <div className="text-sm text-gray-600">{TEXTS.myParticipations.totalQuinielas}</div>
+            <div 
+              className="text-2xl font-bold"
+              style={{ color: HEX_COLORS.textDark }}
+            >
+              2
+            </div>
+            <div 
+              className="text-sm"
+              style={{ color: HEX_COLORS.textLight }}
+            >
+              {TEXTS.myParticipations.totalQuinielas}
+            </div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">6.5</div>
-            <div className="text-sm text-gray-600">{TEXTS.myParticipations.averageHits}</div>
+            <div 
+              className="text-2xl font-bold"
+              style={{ color: HEX_COLORS.success }}
+            >
+              6.5
+            </div>
+            <div 
+              className="text-sm"
+              style={{ color: HEX_COLORS.textLight }}
+            >
+              {TEXTS.myParticipations.averageHits}
+            </div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">8</div>
-            <div className="text-sm text-gray-600">{TEXTS.myParticipations.bestResult}</div>
+            <div 
+              className="text-2xl font-bold"
+              style={{ color: HEX_COLORS.info }}
+            >
+              8
+            </div>
+            <div 
+              className="text-sm"
+              style={{ color: HEX_COLORS.textLight }}
+            >
+              {TEXTS.myParticipations.bestResult}
+            </div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">72%</div>
-            <div className="text-sm text-gray-600">{TEXTS.myParticipations.hitRate}</div>
+            <div 
+              className="text-2xl font-bold"
+              style={{ color: HEX_COLORS.primary }}
+            >
+              72%
+            </div>
+            <div 
+              className="text-sm"
+              style={{ color: HEX_COLORS.textLight }}
+            >
+              {TEXTS.myParticipations.hitRate}
+            </div>
           </div>
         </div>
       </div>
