@@ -30,4 +30,4 @@ export const COLORS = {
   statusOpen: '#10b981', // green
   statusClosed: '#ef4444', // red
   statusResults: '#3b82f6', // blue
-};
+}; 
