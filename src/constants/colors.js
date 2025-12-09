@@ -85,6 +85,7 @@ export const HEX_COLORS = {
   borderGray: COLOR_CONFIG.gray[200],
   
   // Status indicators
+
   statusOpen: COLOR_CONFIG.statusSpecific.open,
   statusClosed: COLOR_CONFIG.statusSpecific.closed,
   statusResults: COLOR_CONFIG.statusSpecific.results,
@@ -332,3 +333,4 @@ export default COLORS;
  *    
  *    <div style={{ backgroundColor: HEX_COLORS.primary }}>
  */
+
