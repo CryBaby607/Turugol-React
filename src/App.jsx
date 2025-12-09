@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // Componentes
 import Navbar from './components/Navbar/Navbar';
@@ -18,19 +18,100 @@ import { QUINIELAS } from './data/quiniela';
 // Constantes
 import { POOL_STATUS } from './constants/routes';
 
-// Componente principal de la aplicación con navegación
-const QuinielaApp = ({ navigate }) => {
+// Componente Modal ULTRA SIMPLE (eliminando cualquier estilo problemático)
+const Modal = ({ isOpen, onClose, children }) => {
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {/* Fondo oscuro - ESTILO DIRECTAMENTE */}
+      <div 
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 9998
+        }}
+        onClick={onClose}
+      />
+      
+      {/* Modal - ESTILO DIRECTAMENTE */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999,
+        padding: '1rem'
+      }}>
+        <div 
+          style={{
+            backgroundColor: 'white',
+            borderRadius: '0.75rem',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            maxWidth: '28rem',
+            width: '100%',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Botón cerrar */}
+          <button
+            onClick={onClose}
+            style={{
+              position: 'absolute',
+              top: '1rem',
+              right: '1rem',
+              color: '#6b7280',
+              zIndex: 10,
+              padding: '0.25rem',
+              borderRadius: '9999px',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '1.5rem',
+              lineHeight: '1'
+            }}
+            aria-label="Cerrar modal"
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#374151';
+              e.currentTarget.style.backgroundColor = '#f3f4f6';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#6b7280';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            ✕
+          </button>
+          
+          {/* Contenido */}
+          <div style={{ padding: '1.5rem' }}>
+            {children}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// Componente principal de la aplicación
+const QuinielaApp = () => {
   const [currentSection, setCurrentSection] = useState('activas');
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState('all');
   const [selectedSort, setSelectedSort] = useState('deadline');
-
-  /**
-   * Maneja el clic en el botón de login
-   */
-  const handleLoginClick = () => {
-    navigate('/login');
-  };
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   /**
    * Filtra las quinielas según los criterios:
@@ -70,11 +151,9 @@ const QuinielaApp = ({ navigate }) => {
 
   /**
    * Maneja la participación en una quiniela
-   * En el futuro abrirá un modal
    */
   const handleParticipate = (poolId) => {
     console.log('Participar en quiniela:', poolId);
-    // TODO: Abrir modal de participación
   };
 
   /**
@@ -82,17 +161,61 @@ const QuinielaApp = ({ navigate }) => {
    */
   const handleEdit = (poolId) => {
     console.log('Editar quiniela:', poolId);
-    // TODO: Abrir modal de edición
+  };
+
+  /**
+   * Maneja el cierre del modal
+   */
+  const handleCloseModal = () => {
+    setShowLoginModal(false);
+    setShowRegisterModal(false);
+  };
+
+  /**
+   * Cambia de login a registro
+   */
+  const handleSwitchToRegister = () => {
+    setShowLoginModal(false);
+    setShowRegisterModal(true);
+  };
+
+  /**
+   * Cambia de registro a login
+   */
+  const handleSwitchToLogin = () => {
+    setShowRegisterModal(false);
+    setShowLoginModal(true);
+  };
+
+  /**
+   * Maneja login exitoso
+   */
+  const handleLoginSuccess = (userData) => {
+    setIsAuthenticated(true);
+    console.log('Usuario autenticado:', userData);
+    handleCloseModal();
+  };
+
+  /**
+   * Maneja logout
+   */
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userPhone');
+    console.log('Usuario cerró sesión');
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Barra de navegación con botón de login */}
+    <div className="min-h-screen bg-gray-50 relative">
+      {/* Barra de navegación */}
       <Navbar
         currentSection={currentSection}
         onSectionChange={setCurrentSection}
         isAdminMode={isAdminMode}
-        onLoginClick={handleLoginClick}
+        isAuthenticated={isAuthenticated}
+        onLoginClick={() => setShowLoginModal(true)}
+        onLogoutClick={handleLogout}
       />
 
       {/* Sección Hero - Solo visible en sección de activas */}
@@ -142,27 +265,34 @@ const QuinielaApp = ({ navigate }) => {
 
       {/* Pie de página */}
       <Footer />
+
+      {/* Modal de Login - CON ESTILOS DIRECTOS */}
+      <Modal isOpen={showLoginModal} onClose={handleCloseModal}>
+        <Login 
+          onClose={handleCloseModal}
+          onSwitchToRegister={handleSwitchToRegister}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      </Modal>
+
+      {/* Modal de Registro */}
+      <Modal isOpen={showRegisterModal} onClose={handleCloseModal}>
+        <Register 
+          onClose={handleCloseModal}
+          onSwitchToLogin={handleSwitchToLogin}
+        />
+      </Modal>
     </div>
   );
 };
 
-// Componente wrapper para usar useNavigate
-const QuinielaAppWithRouter = () => {
-  const navigate = useNavigate();
-  return <QuinielaApp navigate={navigate} />;
-};
-
-// Componente App principal con rutas
+// Componente App principal
 const App = () => {
   return (
     <Router>
       <Routes>
-        {/* Ruta para login */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        
-        {/* Ruta principal */}
-        <Route path="/*" element={<QuinielaAppWithRouter />} />
+        {/* Solo una ruta principal */}
+        <Route path="/*" element={<QuinielaApp />} />
       </Routes>
     </Router>
   );
