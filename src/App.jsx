@@ -1,136 +1,68 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
-// Componentes
+// Layouts
 import Navbar from './components/Navbar/Navbar';
+import AdminLayout from './layouts/AdminLayout';
+import Footer from './components/Footer/Footer';
+
+// Componentes Públicos (Reutilizamos lo que tenías)
 import Hero from './components/Hero/Hero';
-import Filters from './components/Filters/Filters';
 import ActivePoolsSection from './components/Sections/ActivePoolsSection';
 import ClosedPoolsSection from './components/Sections/ClosedPoolsSection';
 import MyParticipationsSection from './components/Sections/MyParticipationsSection';
-import Footer from './components/Footer/Footer';
+import { QUINIELAS } from './data/quiniela'; // Mock Data
 
-// Datos
-import { QUINIELAS } from './data/quiniela';
+// Páginas Admin
+import AdminDashboard from './pages/Admin/Dashboard';
+import CreatePool from './pages/Admin/CreatePool'; // <--- FALTA ESTE ARCHIVO
+import PoolsList from './pages/Admin/PoolsList';   // <--- FALTA ESTE ARCHIVO
 
-// Constantes
-import { POOL_STATUS } from './constants/routes';
-
-const App = () => {
-  const [currentSection, setCurrentSection] = useState('activas');
-  const [isAdminMode, setIsAdminMode] = useState(false);
-  const [selectedLeague, setSelectedLeague] = useState('all');
-  const [selectedSort, setSelectedSort] = useState('deadline');
-
-  /**
-   * Filtra las quinielas según los criterios:
-   * - Sección actual (activas, cerradas, participaciones)
-   * - Liga seleccionada
-   * - Opción de ordenamiento
-   */
-  const filteredPools = () => {
-    let pools = QUINIELAS.filter(p => {
-      if (currentSection === 'activas') return p.status === POOL_STATUS.OPEN;
-      if (currentSection === 'cerradas') return p.status === POOL_STATUS.CLOSED;
-      if (currentSection === 'participaciones') return p.id === 1 || p.id === 4;
-      return false;
-    });
-
-    // Filtrar por liga si está seleccionada
-    if (selectedLeague !== 'all') {
-      pools = pools.filter(p => p.leagueCode === selectedLeague);
-    }
-
-    // Ordenar según opción seleccionada
-    pools.sort((a, b) => {
-      if (selectedSort === 'deadline') {
-        return new Date(a.deadline) - new Date(b.deadline);
-      }
-      if (selectedSort === 'newest') {
-        return b.id - a.id;
-      }
-      if (selectedSort === 'participants') {
-        return b.participants - a.participants;
-      }
-      return 0;
-    });
-
-    return pools;
-  };
-
-  /**
-   * Maneja la participación en una quiniela
-   * En el futuro abrirá un modal
-   */
-  const handleParticipate = (poolId) => {
-    console.log('Participar en quiniela:', poolId);
-    // TODO: Abrir modal de participación
-  };
-
-  /**
-   * Maneja la edición de una quiniela (solo admin)
-   */
-  const handleEdit = (poolId) => {
-    console.log('Editar quiniela:', poolId);
-    // TODO: Abrir modal de edición
-  };
-
+// Componente para la Home Pública
+const LandingPage = () => {
+  // Aquí mantenemos tu lógica visual original para la home
+  const activePools = QUINIELAS.filter(p => p.status === 'open');
+  
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Barra de navegación */}
-      <Navbar
-        currentSection={currentSection}
-        onSectionChange={setCurrentSection}
-        isAdminMode={isAdminMode}
-      />
-
-      {/* Sección Hero - Solo visible en sección de activas */}
-      {currentSection === 'activas' && <Hero />}
-
-      {/* Panel de filtros */}
-      <Filters
-        selectedLeague={selectedLeague}
-        onLeagueChange={setSelectedLeague}
-        selectedSort={selectedSort}
-        onSortChange={setSelectedSort}
-        isAdminMode={isAdminMode}
-        onAdminModeToggle={() => setIsAdminMode(!isAdminMode)}
-      />
-
-      {/* Contenido principal */}
-      <section className="py-12">
-        <div className="max-w-7xl mx-auto px-4">
-          {/* Sección Quinielas Activas */}
-          {currentSection === 'activas' && (
-            <ActivePoolsSection
-              pools={filteredPools()}
-              onParticipate={handleParticipate}
-              onEdit={handleEdit}
-              isAdminMode={isAdminMode}
-            />
-          )}
-
-          {/* Sección Resultados Cerrados */}
-          {currentSection === 'cerradas' && (
-            <ClosedPoolsSection
-              pools={filteredPools()}
-              onEdit={handleEdit}
-              isAdminMode={isAdminMode}
-            />
-          )}
-
-          {/* Sección Mis Participaciones */}
-          {currentSection === 'participaciones' && (
-            <MyParticipationsSection
-              pools={filteredPools()}
-              onViewResults={handleParticipate}
-            />
-          )}
-        </div>
+      <Navbar isAdminMode={false} currentSection="activas" onSectionChange={() => {}} />
+      <Hero />
+      <section className="py-12 max-w-7xl mx-auto px-4">
+        <ActivePoolsSection 
+          pools={activePools} 
+          onParticipate={(id) => console.log('Participar', id)} 
+          isAdminMode={false} 
+        />
       </section>
-
-      {/* Pie de página */}
       <Footer />
     </div>
+  );
+};
+
+const App = () => {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Ruta Pública */}
+        <Route path="/" element={<LandingPage />} />
+
+        {/* Rutas de Administración */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="quinielas" element={<PoolsList />} />
+          <Route path="crear" element={<CreatePool />} />
+          
+          {/* Placeholders para rutas futuras */}
+          <Route path="partidos" element={<div>Gestión de Partidos API (Próximamente)</div>} />
+          <Route path="resultados" element={<div>Gestión de Resultados (Próximamente)</div>} />
+          <Route path="participantes" element={<div>Lista de Participantes (Próximamente)</div>} />
+          <Route path="configuracion" element={<div>Configuración (Próximamente)</div>} />
+        </Route>
+
+        {/* Redirección 404 */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 };
 
