@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { TEXTS } from '../../constants/texts';
+import { TEXTS } from '../constants/texts';
 
 const AdminLayout = () => {
   const [collapsed, setCollapsed] = useState(false);

@@ -2,7 +2,7 @@
 export const TEXTS = {
   // Navegación
   nav: {
-    appName: 'QuinielasFútbol',
+    appName: 'Turigol',
     tagline: 'Pronósticos sin apuestas',
     activeQuinielas: 'Quinielas Activas',
     results: 'Resultados',
