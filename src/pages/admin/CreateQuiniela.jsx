@@ -12,9 +12,9 @@ const MAX_FIXTURES = 9;
 const MAX_DESCRIPTION_CHARS = 200;
 
 const DUMMY_LEAGUES = [
-    { id: 140, name: 'LaLiga (España)', nameShort: 'LALIGA' },
-    { id: 39, name: 'Premier League (Inglaterra)', nameShort: 'PREMIER' },
-    { id: 262, name: 'Liga MX (México)', nameShort: 'LIGA MX' },
+    { id: 140, name: 'LaLiga (España)', nameShort: 'La Liga' },
+    { id: 39, name: 'Premier League (Inglaterra)', nameShort: 'Premier League' },
+    { id: 262, name: 'Liga MX (México)', nameShort: 'Liga MX    ' },
 ];
 
 const CreateQuiniela = () => {

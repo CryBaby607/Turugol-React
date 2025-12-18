@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
 import { db } from '../../firebase/config';
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 
 const AdminDashboardPage = () => {
     // Estados para las métricas
@@ -17,16 +17,15 @@ const AdminDashboardPage = () => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                // 1. Obtener conteo de usuarios (Optimización: en producción usar count() de servidor)
+                // 1. Obtener conteo de usuarios 
                 const usersSnap = await getDocs(collection(db, 'users'));
                 const totalUsers = usersSnap.size;
 
-                // 2. Obtener quinielas para métricas y lista
-                // Traemos las últimas 5 creadas
+                // 2. Obtener quinielas recientes
                 const qQuinielas = query(
                     collection(db, 'quinielas'), 
                     orderBy('metadata.createdAt', 'desc'), 
-                    limit(5)
+                    limit(10) 
                 );
                 const quinielasSnap = await getDocs(qQuinielas);
                 const quinielasData = quinielasSnap.docs.map(doc => ({
@@ -34,12 +33,13 @@ const AdminDashboardPage = () => {
                     ...doc.data()
                 }));
 
-                // Calcular métricas derivadas
                 const now = new Date();
                 const active = quinielasData.filter(q => new Date(q.metadata.deadline) > now);
                 
-                // Encontrar la fecha de cierre más próxima que aún no ha pasado
-                const deadlines = active.map(q => new Date(q.metadata.deadline)).sort((a,b) => a - b);
+                const deadlines = active
+                    .map(q => new Date(q.metadata.deadline))
+                    .sort((a,b) => a - b);
+                
                 const nextDeadline = deadlines.length > 0 ? deadlines[0] : null;
 
                 setStats({
@@ -47,7 +47,8 @@ const AdminDashboardPage = () => {
                     activeQuinielas: active.length,
                     nextDeadline
                 });
-                setRecentQuinielas(quinielasData);
+                
+                setRecentQuinielas(quinielasData.slice(0, 5));
 
             } catch (error) {
                 console.error("Error cargando dashboard:", error);
@@ -59,25 +60,34 @@ const AdminDashboardPage = () => {
         fetchDashboardData();
     }, []);
 
-    // Componente auxiliar para Tarjetas de KPI
-    const StatCard = ({ title, value, icon, color, subtext }) => (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition-shadow">
-            <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-                <h3 className="text-3xl font-bold text-gray-800">{loading ? '-' : value}</h3>
-                {subtext && <p className={`text-xs mt-2 font-semibold ${color}`}>{subtext}</p>}
+    // Componente auxiliar corregido para eliminar el subrayado (background) del texto
+    const StatCard = ({ title, value, icon, color, subtext }) => {
+        // Extraemos solo la clase de texto (ej: "text-green-600") para el subtext
+        const textColorClass = color.split(' ').find(cls => cls.startsWith('text-'));
+
+        return (
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition-shadow">
+                <div>
+                    <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
+                    <h3 className="text-3xl font-bold text-gray-800">{loading ? '-' : value}</h3>
+                    {subtext && (
+                        <p className={`text-xs mt-2 font-semibold ${textColorClass}`}>
+                            {subtext}
+                        </p>
+                    )}
+                </div>
+                {/* El color de fondo (bg-...) se aplica solo aquí con opacidad suave */}
+                <div className={`p-3 rounded-lg ${color} bg-opacity-10 text-xl`}>
+                    <i className={icon}></i>
+                </div>
             </div>
-            <div className={`p-3 rounded-lg ${color} bg-opacity-10 text-xl`}>
-                <i className={icon}></i>
-            </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <DashboardLayout isAdmin={true}>
             <div className="max-w-7xl mx-auto space-y-8">
                 
-                {/* 1. HEADER & BIENVENIDA */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h2 className="text-2xl font-bold text-gray-800">Panel de Control</h2>
@@ -90,35 +100,32 @@ const AdminDashboardPage = () => {
                     </div>
                 </div>
 
-                {/* 2. GRID DE MÉTRICAS (KPIs) */}
+                {/* Grid de KPIs con clases de color limpias */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <StatCard 
                         title="Quinielas Activas"
                         value={stats.activeQuinielas}
                         icon="fas fa-clock"
-                        color="text-green-600 bg-green-500"
+                        color="text-green-600 bg-green-600"
                         subtext="Disponibles para jugar"
                     />
                     <StatCard 
                         title="Usuarios Registrados"
                         value={stats.totalUsers}
                         icon="fas fa-users"
-                        color="text-blue-600 bg-blue-500"
+                        color="text-blue-600 bg-blue-600"
                         subtext="Comunidad total"
                     />
                     <StatCard 
                         title="Próximo Cierre"
                         value={stats.nextDeadline ? stats.nextDeadline.toLocaleDateString() : 'N/A'}
                         icon="fas fa-calendar-day"
-                        color="text-orange-600 bg-orange-500"
+                        color="text-orange-600 bg-orange-600"
                         subtext={stats.nextDeadline ? stats.nextDeadline.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Sin pendientes'}
                     />
                 </div>
 
-                {/* 3. SECCIÓN PRINCIPAL: TABLA + ACCIONES */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    
-                    {/* TABLA DE ÚLTIMAS QUINIELAS (Ocupa 2 columnas) */}
                     <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                             <h3 className="font-bold text-gray-800">Actividad Reciente</h3>
@@ -163,7 +170,6 @@ const AdminDashboardPage = () => {
                         </div>
                     </div>
 
-                    {/* TARJETA DE ACCIONES RÁPIDAS (Ocupa 1 columna) */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 h-fit">
                         <h3 className="font-bold text-gray-800 mb-4">Acciones Rápidas</h3>
                         <div className="space-y-3">
@@ -204,7 +210,6 @@ const AdminDashboardPage = () => {
                             </Link>
                         </div>
                     </div>
-
                 </div>
             </div>
         </DashboardLayout>
