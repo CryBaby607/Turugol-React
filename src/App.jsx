@@ -6,7 +6,6 @@ import RegisterPage from './pages/Register';
 import UserDashboardPage from './pages/user/Dashboard'; 
 import AdminDashboardPage from './pages/admin/Dashboard';
 import CreateQuiniela from './pages/admin/CreateQuiniela';
-import SchedulePageWithLayout from './pages/admin/FootballSchedule';
 import AvailableQuinielas from './pages/user/AvailableQuinielas';
 import UserManagement from './pages/admin/UserManagement';
 import ManageQuinielas from './pages/admin/ManageQuinielas'; 
@@ -41,9 +40,6 @@ function App() {
                     
                     {/* 2. AÑADIR LA RUTA FALTANTE AQUÍ */}
                     <Route path="/dashboard/admin/manage" element={<ManageQuinielas />} />
-
-                    {/* Calendario */}
-                    <Route path="/dashboard/admin/schedule" element={<SchedulePageWithLayout />} />
                 </Route>
                 
                 <Route path="*" element={<Home />} /> 

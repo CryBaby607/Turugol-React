@@ -14,8 +14,7 @@ const Sidebar = ({ isAdmin }) => {
               { path: '/dashboard/admin', name: 'Resumen Admin', icon: 'fas fa-chart-line' },
               { path: '/dashboard/admin/create', name: 'Crear Quiniela', icon: 'fas fa-plus-circle' },
               { path: '/dashboard/admin/manage', name: 'Gestionar Quinielas', icon: 'fas fa-clipboard-list' },
-              { path: '/dashboard/admin/users', name: 'Gestionar Usuarios', icon: 'fas fa-users' }, // Nueva ruta agregada
-              { path: '/dashboard/admin/schedule', name: 'Calendario', icon: 'fas fa-calendar-alt' }, 
+              { path: '/dashboard/admin/users', name: 'Gestionar Usuarios', icon: 'fas fa-users' }, 
           ]
         : [
               { path: '/dashboard/user', name: 'Mis Quinielas', icon: 'fas fa-trophy' },
