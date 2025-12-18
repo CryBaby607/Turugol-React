@@ -8,6 +8,7 @@ import AdminDashboardPage from './pages/admin/Dashboard';
 import CreateQuiniela from './pages/admin/CreateQuiniela';
 import SchedulePageWithLayout from './pages/admin/FootballSchedule';
 import AvailableQuinielas from './pages/user/AvailableQuinielas';
+import UserManagement from './pages/admin/UserManagement'; // Página de gestión de usuarios
 
 // 🛑 IMPORTAR EL COMPONENTE DE PROTECCIÓN
 import ProtectedRoute from './components/ProtectedRoute'; 
@@ -21,7 +22,6 @@ function App() {
                 {/* ============================================================== */}
                 <Route path="/" element={<Home />} />
                 
-                {/* Deberías crear un PublicOnlyRoute si quieres evitar que usuarios logueados vean el login/register */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
 
@@ -29,10 +29,7 @@ function App() {
                 {/* ============================================================== */}
                 {/* 2. RUTAS PROTEGIDAS (REQUIEREN CUALQUIER AUTENTICACIÓN) */}
                 {/* ============================================================== */}
-                {/* El componente ProtectedRoute usa <Outlet /> y anidamos las rutas dentro */}
-                
                 <Route element={<ProtectedRoute />}>
-                    {/* El usuario normal accederá a su dashboard */}
                     <Route path="/dashboard/user" element={<UserDashboardPage />} />
                     <Route path="/dashboard/user/avaliblequinelas" element={<AvailableQuinielas />} /> 
                     <Route path="/dashboard/user/history" element={<UserDashboardPage />} />
@@ -42,17 +39,17 @@ function App() {
                 {/* ============================================================== */}
                 {/* 3. RUTAS PROTEGIDAS POR ROL (REQUIEREN ROL 'admin') */}
                 {/* ============================================================== */}
-                
                 <Route element={<ProtectedRoute requiredRole="admin" />}>
                     {/* Panel principal del Admin */}
                     <Route path="/dashboard/admin" element={<AdminDashboardPage />} />
                     
-                    {/* Rutas anidadas de Admin */}
+                    {/* Rutas de gestión administrativa */}
+                    <Route path="/dashboard/admin/users" element={<UserManagement />} /> 
                     <Route path="/dashboard/admin/create" element={<CreateQuiniela />} />
                     <Route path="/dashboard/admin/schedule" element={<SchedulePageWithLayout />} />
                 </Route>
                 
-                {/* Opcional: Ruta para manejar errores de permisos o 404 */}
+                {/* Manejo de rutas no encontradas */}
                 <Route path="*" element={<Home />} /> 
 
             </Routes>
