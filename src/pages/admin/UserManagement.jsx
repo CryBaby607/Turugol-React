@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase/config';
-import { collection, getDocs, query, where } from 'firebase/firestore'; // Eliminé orderBy si no se usa en la query inicial
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import DashboardLayout from '../../components/DashboardLayout';
 
 const UserManagement = () => {
@@ -28,122 +28,144 @@ const UserManagement = () => {
     }, []);
 
     const viewHistory = async (userId) => {
-        setLoading(true);
+        setLoading(true); // Pequeño loading visual global o podrías usar uno local
         try {
             const q = query(collection(db, 'participaciones'), where('userId', '==', userId));
             const snap = await getDocs(q);
             const history = snap.docs.map(doc => doc.data());
             setSelectedUserHistory({ userId, history });
         } catch (error) {
-            console.error("Error al cargar historial:", error);
+            console.error("Error historial:", error);
         } finally {
             setLoading(false);
         }
     };
 
-    // CORRECCIÓN: Filtrar por los campos reales (name y username)
+    // Helper para generar avatar visual
+    const getInitials = (name) => {
+        if (!name) return '??';
+        return name.substring(0, 2).toUpperCase();
+    };
+
+    const getAvatarColor = (name) => {
+        const colors = ['bg-red-100 text-red-600', 'bg-green-100 text-green-600', 'bg-blue-100 text-blue-600', 'bg-yellow-100 text-yellow-600', 'bg-purple-100 text-purple-600'];
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        return colors[Math.abs(hash) % colors.length];
+    };
+
     const filteredUsers = users.filter(u => 
-        (u.name && u.name.toLowerCase().includes(searchTerm.toLowerCase())) || 
-        (u.username && u.username.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (u.email && u.email.toLowerCase().includes(searchTerm.toLowerCase()))
+        u.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        u.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
-        <DashboardLayout title="Gestión de Usuarios" isAdmin={true}>
-            <div className="p-6">
-                {/* Buscador */}
-                <div className="mb-6">
-                    <input 
-                        type="text" 
-                        placeholder="Buscar por nombre, usuario o correo..." 
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+        <DashboardLayout isAdmin={true}>
+            <div className="max-w-7xl mx-auto p-4 lg:p-8">
+                
+                {/* Header */}
+                <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                    <div>
+                        <h2 className="text-3xl font-bold text-gray-800">Directorio de Usuarios</h2>
+                        <p className="text-gray-500">Administra los accesos y roles de la plataforma.</p>
+                    </div>
+                    
+                    {/* Buscador Moderno */}
+                    <div className="relative w-full md:w-96">
+                        <input 
+                            type="text" 
+                            placeholder="Buscar por nombre o correo..." 
+                            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-shadow shadow-sm"
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
                 </div>
 
                 {/* Tabla Maestra */}
-                <div className="bg-white rounded-lg shadow overflow-x-auto">
-                    <table className="min-w-full table-auto">
-                        <thead className="bg-gray-50 border-b">
-                            <tr>
-                                {/* Unificamos Nombre y Usuario en una sola columna */}
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                {/* Eliminada la columna de Rol */}
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                            {filteredUsers.map(user => (
-                                <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex flex-col">
-                                            {/* Usamos user.name (Nombre real) */}
-                                            <span className="font-medium text-gray-900">
-                                                {user.name || 'Sin nombre'}
-                                            </span>
-                                            {/* Usamos user.username como subtítulo */}
-                                            <span className="text-xs text-gray-500">
-                                                @{user.username || 'sin_usuario'}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                                        {user.email}
-                                    </td>
-                                    {/* Eliminada la celda de Rol */}
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                        <button 
-                                            onClick={() => viewHistory(user.id)}
-                                            className="text-blue-600 hover:text-blue-900 font-semibold flex items-center gap-2"
-                                        >
-                                            <i className="fas fa-history"></i> Historial
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                            {filteredUsers.length === 0 && !loading && (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full text-left">
+                            <thead className="bg-gray-50 border-b border-gray-100">
                                 <tr>
-                                    <td colSpan="3" className="px-6 py-8 text-center text-gray-500">
-                                        No se encontraron usuarios con ese criterio.
-                                    </td>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Usuario</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Estado / Rol</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha Registro</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
                                 </tr>
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {loading ? (
+                                    <tr><td colSpan="4" className="p-8 text-center text-gray-400">Cargando usuarios...</td></tr>
+                                ) : filteredUsers.length === 0 ? (
+                                    <tr><td colSpan="4" className="p-8 text-center text-gray-400">No se encontraron usuarios.</td></tr>
+                                ) : (
+                                    filteredUsers.map(user => {
+                                        const name = user.displayName || 'Sin Nombre';
+                                        return (
+                                            <tr key={user.id} className="hover:bg-gray-50/50 transition-colors group">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center">
+                                                        <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm ${getAvatarColor(name)}`}>
+                                                            {getInitials(name)}
+                                                        </div>
+                                                        <div className="ml-4">
+                                                            <div className="text-sm font-semibold text-gray-900">{name}</div>
+                                                            <div className="text-sm text-gray-500">{user.email}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}`}>
+                                                        {user.role === 'admin' ? 'Administrador' : 'Jugador'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {/* Si tienes fecha de registro en BD úsala, si no, placeholder */}
+                                                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'} 
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <button 
+                                                        onClick={() => viewHistory(user.id)}
+                                                        className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
+                                                    >
+                                                        Historial
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
-                {/* Modal de Historial (Sin cambios mayores, solo visuales) */}
+                {/* Modal de Historial (Diseño mejorado) */}
                 {selectedUserHistory && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
-                        <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold text-gray-800">Historial de Participación</h3>
-                                <button onClick={() => setSelectedUserHistory(null)} className="text-gray-400 hover:text-gray-600">
-                                    <i className="fas fa-times text-xl"></i>
-                                </button>
-                            </div>
-                            
-                            {selectedUserHistory.history.length > 0 ? (
-                                <ul className="space-y-3">
-                                    {selectedUserHistory.history.map((h, i) => (
-                                        <li key={i} className="p-3 bg-gray-50 rounded-lg border border-gray-100 flex justify-between items-center">
-                                            <span className="font-semibold text-gray-700">{h.quinielaName}</span>
-                                            <span className="text-sm font-medium bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                        <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl animate-fade-in">
+                            <h3 className="text-xl font-bold mb-4 text-gray-800">Historial de Juego</h3>
+                            <div className="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar space-y-3">
+                                {selectedUserHistory.history.length > 0 ? (
+                                    selectedUserHistory.history.map((h, i) => (
+                                        <div key={i} className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex justify-between items-center">
+                                            <span className="font-bold text-gray-700">{h.quinielaName || 'Quiniela #' + (i+1)}</span>
+                                            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-xs font-bold">
                                                 {h.puntos || 0} pts
                                             </span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-                                    <p className="text-gray-500 italic">Este usuario aún no ha participado en ninguna quiniela.</p>
-                                </div>
-                            )}
-                            
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-8 text-gray-400">
+                                        <i className="fas fa-ghost text-3xl mb-2"></i>
+                                        <p>Este usuario aún no ha participado.</p>
+                                    </div>
+                                )}
+                            </div>
                             <button 
                                 onClick={() => setSelectedUserHistory(null)}
-                                className="mt-6 w-full bg-gray-800 text-white py-2 rounded-lg hover:bg-gray-900 transition-colors"
+                                className="mt-6 w-full bg-gray-800 text-white py-3 rounded-xl hover:bg-gray-900 font-medium transition-colors"
                             >
                                 Cerrar
                             </button>

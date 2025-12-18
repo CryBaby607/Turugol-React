@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { db, auth } from '../../firebase/config'; 
-import { doc, setDoc, getDoc, deleteDoc, collection } from 'firebase/firestore';
+import { doc, setDoc, getDoc, deleteDoc, collection } from 'firebase/firestore'; 
 import { fetchFromApi } from '../../services/footballApi';
 
 const QUINIELA_BORRADORES_COLLECTION = "quinielaBorradores";
@@ -11,10 +11,11 @@ const SEASON_YEAR = 2025;
 const MAX_FIXTURES = 9;
 const MAX_DESCRIPTION_CHARS = 200;
 
+// Agregamos logos para mejorar la UI
 const DUMMY_LEAGUES = [
-    { id: 140, name: 'LaLiga (España)', nameShort: 'La Liga' },
-    { id: 39, name: 'Premier League (Inglaterra)', nameShort: 'Premier League' },
-    { id: 262, name: 'Liga MX (México)', nameShort: 'Liga MX    ' },
+    { id: 140, name: 'LaLiga', nameShort: 'LALIGA', logo: 'https://media.api-sports.io/football/leagues/140.png' },
+    { id: 39, name: 'Premier League', nameShort: 'PREMIER', logo: 'https://media.api-sports.io/football/leagues/39.png' },
+    { id: 262, name: 'Liga MX', nameShort: 'LIGA MX', logo: 'https://media.api-sports.io/football/leagues/262.png' },
 ];
 
 const CreateQuiniela = () => {
@@ -30,7 +31,9 @@ const CreateQuiniela = () => {
     
     const [availableRounds, setAvailableRounds] = useState([]); 
     const [isLoadingRounds, setIsLoadingRounds] = useState(false);
+    
     const [apiFixtures, setApiFixtures] = useState([]); 
+    const [searchTerm, setSearchTerm] = useState(''); // Nuevo estado para búsqueda
     const [selectedFixtures, setSelectedFixtures] = useState([]); 
     
     const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +45,7 @@ const CreateQuiniela = () => {
     const initialLoadRef = useRef(true); 
     const isSubmittingRef = useRef(false);
 
-    // --- FUNCIONES FIREBASE (Se mantienen igual) ---
+    // --- FUNCIONES FIREBASE ---
     const getBorradorRef = (uid) => doc(db, QUINIELA_BORRADORES_COLLECTION, uid);
 
     const saveDraftToFirebase = async (data, uid) => {
@@ -66,7 +69,9 @@ const CreateQuiniela = () => {
         return quinielaRef.id;
     };
 
-    // --- EFECTOS DE FECHA Y GUARDADO (Se mantienen igual) ---
+    // --- EFECTOS (Lógica de negocio) ---
+    
+    // 1. Calcular Fecha Límite Automática
     useEffect(() => {
         if (selectedFixtures.length > 0) {
             const earliestMatchTimestamp = Math.min(
@@ -80,6 +85,7 @@ const CreateQuiniela = () => {
         }
     }, [selectedFixtures]);
 
+    // 2. Cargar Borrador Inicial
     useEffect(() => {
         if (!currentAdminId) return; 
         const loadInitialDraft = async () => {
@@ -101,6 +107,7 @@ const CreateQuiniela = () => {
         loadInitialDraft();
     }, [currentAdminId]); 
 
+    // 3. Auto-guardado
     useEffect(() => {
         if (initialLoadRef.current || !currentAdminId || isSubmittingRef.current) return; 
         setIsSaving(true);
@@ -120,7 +127,7 @@ const CreateQuiniela = () => {
         return () => clearTimeout(timer); 
     }, [title, description, deadline, selectedFixtures, selectedLeagueId, selectedRound, currentAdminId]);
 
-    // --- 3. CARGAR JORNADAS (USANDO SERVICIO) ---
+    // 4. Cargar Jornadas (Rounds)
     useEffect(() => {
         const fetchRoundsForLeague = async () => {
             if (!selectedLeagueId) return;
@@ -128,25 +135,20 @@ const CreateQuiniela = () => {
             setAvailableRounds([]); 
             
             try {
-                // Usamos el helper centralizado. Nota que el endpoint es 'fixtures/rounds'
                 const allRoundsData = await fetchFromApi('fixtures/rounds', `?league=${selectedLeagueId}&season=${SEASON_YEAR}`);
-                
                 if (allRoundsData.response) {
                     setAvailableRounds(allRoundsData.response);
                 }
 
-                // Obtener jornada actual
                 const currentRoundData = await fetchFromApi('fixtures/rounds', `?league=${selectedLeagueId}&season=${SEASON_YEAR}&current=true`);
-
                 if (currentRoundData.response && currentRoundData.response.length > 0) {
                     setSelectedRound(currentRoundData.response[0]);
                 } else if (allRoundsData.response && allRoundsData.response.length > 0) {
                     setSelectedRound(allRoundsData.response[allRoundsData.response.length - 1]);
                 }
-
             } catch (error) {
                 console.error("Error al cargar rondas:", error);
-                setApiError("Error al cargar las jornadas de la liga.");
+                setApiError("Error al cargar las jornadas.");
             } finally {
                 setIsLoadingRounds(false);
             }
@@ -156,6 +158,28 @@ const CreateQuiniela = () => {
             fetchRoundsForLeague();
         }
     }, [selectedLeagueId]);
+
+    // 5. Cargar Partidos (Fixtures)
+    const fetchFixtures = useCallback(async (leagueId, roundName) => {
+        if (!leagueId || !roundName) return;
+        setIsLoading(true);
+        setApiError(null);
+        try {
+            const data = await fetchFromApi('fixtures', `?league=${leagueId}&season=${SEASON_YEAR}&round=${encodeURIComponent(roundName)}&timezone=America/Mexico_City`);
+            setApiFixtures(data.response || []);
+        } catch (err) {
+            setApiError(`Fallo al cargar partidos`);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []); 
+
+    useEffect(() => {
+        if (selectedRound && selectedLeagueId) {
+            fetchFixtures(selectedLeagueId, selectedRound);
+        }
+    }, [selectedLeagueId, selectedRound, fetchFixtures]);
+
 
     // --- HANDLERS ---
     const handleInputChange = (e) => {
@@ -167,10 +191,10 @@ const CreateQuiniela = () => {
         if (name === 'deadline') setDeadline(value);
     };
 
-    const handleLeagueChange = (e) => {
-        const newLeagueId = parseInt(e.target.value);
-        if (newLeagueId !== selectedLeagueId) {
-            setSelectedLeagueId(newLeagueId);
+    // Handler mejorado para selección visual de liga
+    const handleLeagueClick = (leagueId) => {
+        if (leagueId !== selectedLeagueId) {
+            setSelectedLeagueId(leagueId);
             setSelectedRound('');
             setApiFixtures([]); 
         }
@@ -201,28 +225,6 @@ const CreateQuiniela = () => {
             return prev; 
         });
     };
-
-    // --- 4. FETCH FIXTURES (USANDO SERVICIO) ---
-    const fetchFixtures = useCallback(async (leagueId, roundName) => {
-        if (!leagueId || !roundName) return;
-        setIsLoading(true);
-        setApiError(null);
-        try {
-            // Usamos el helper. Nota que el endpoint es 'fixtures'
-            const data = await fetchFromApi('fixtures', `?league=${leagueId}&season=${SEASON_YEAR}&round=${encodeURIComponent(roundName)}&timezone=America/Mexico_City`);
-            setApiFixtures(data.response || []);
-        } catch (err) {
-            setApiError(`Fallo al cargar partidos`);
-        } finally {
-            setIsLoading(false);
-        }
-    }, []); 
-
-    useEffect(() => {
-        if (selectedRound && selectedLeagueId) {
-            fetchFixtures(selectedLeagueId, selectedRound);
-        }
-    }, [selectedLeagueId, selectedRound, fetchFixtures]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -266,198 +268,307 @@ const CreateQuiniela = () => {
         }
     };
 
+    // Filtrar partidos por búsqueda
+    const filteredFixtures = apiFixtures.filter(f => 
+        f.teams.home.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        f.teams.away.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     const isReadyToSubmit = title && deadline && selectedFixtures.length === MAX_FIXTURES && !deadlineError && !isLoading;
 
-    // --- JSX (SIN CAMBIOS VISUALES) ---
     return (
         <DashboardLayout isAdmin={true}>
-             <div className="p-6 max-w-screen-xl mx-auto w-full"> 
-                <h2 className="text-3xl font-bold text-red-700 mb-8 border-b pb-3">
-                    ✍️ Crear Nueva Quiniela (Máx. {MAX_FIXTURES} Partidos)
-                </h2>
+             <div className="p-4 lg:p-8 max-w-screen-2xl mx-auto w-full"> 
                 
-                {isSaving && !isSubmittingRef.current && (
-                    <div className="fixed top-4 right-4 bg-yellow-100 border border-yellow-400 text-yellow-700 p-2 rounded-lg text-sm z-50">
-                        Guardando borrador...
+                {/* HEADER CON TÍTULO */}
+                <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
+                    <div>
+                        <h2 className="text-3xl font-bold text-gray-800">Crear Nueva Quiniela</h2>
+                        <p className="text-gray-500 mt-1">Configura el evento y selecciona los {MAX_FIXTURES} partidos.</p>
                     </div>
-                )}
+                    {isSaving && !isSubmittingRef.current && (
+                        <div className="flex items-center text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full text-sm font-medium animate-pulse">
+                            <i className="fas fa-cloud-upload-alt mr-2"></i> Guardando borrador...
+                        </div>
+                    )}
+                </div>
 
-                <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-6">
-                    <div className="lg:w-2/3 space-y-8 bg-white p-6 rounded-xl shadow-lg h-fit"> 
-                        <section className="space-y-6 border-b pb-6 border-gray-200">
-                            <h3 className="text-xl font-semibold text-gray-800">1. Datos Generales</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="title" className="block text-sm mb-1 font-bold text-gray-700">Título</label> 
-                                    <input id="title" name="title" type="text" required value={title} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej: Quiniela Jornada 10" />
-                                </div>
-                                <div>
-                                    <label htmlFor="deadline" className="block text-sm mb-1 font-bold text-gray-700">
-                                        Cierre de Apuestas (Automático)
-                                    </label> 
-                                    <input 
-                                        id="deadline" 
-                                        name="deadline" 
-                                        type="datetime-local" 
-                                        required 
-                                        value={deadline} 
-                                        onChange={handleInputChange} 
-                                        className={`w-full px-4 py-2 border rounded-lg bg-gray-50 focus:bg-white transition-colors ${deadlineError ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'}`} 
-                                    />
-                                    <p className="text-[10px] text-blue-500 mt-1">
-                                        * Se configura automáticamente 1 hora antes del primer juego.
-                                    </p>
-                                    {deadlineError && <p className="text-red-500 text-[10px] mt-1 font-bold">{deadlineError}</p>}
-                                </div>
-                                <div className="md:col-span-2">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label htmlFor="description" className="block text-sm font-bold text-gray-700">Descripción</label>
-                                        <span className={`text-[10px] ${description.length >= MAX_DESCRIPTION_CHARS ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
-                                            {description.length} / {MAX_DESCRIPTION_CHARS}
-                                        </span>
-                                    </div>
-                                    <textarea id="description" name="description" rows="2" value={description} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Instrucciones breves o premios..." />
-                                </div>
-                            </div>
-                        </section>
-
-                        <section className="space-y-4 border-b pb-6 border-gray-200">
-                            <h3 className="text-xl font-semibold text-gray-800">2. Selección de Partidos</h3>
-                            <div className="grid grid-cols-3 gap-4">
-                                <div>
-                                    <label htmlFor="league-select" className="block text-sm font-medium text-gray-700 mb-1">Liga</label>
-                                    <select id="league-select" value={selectedLeagueId} onChange={handleLeagueChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                                        {DUMMY_LEAGUES.map(league => (<option key={league.id} value={league.id}>{league.nameShort}</option>))}
-                                    </select>
-                                </div>
-                                <div className="col-span-2 relative">
-                                    <label htmlFor="round-select" className="block text-sm font-medium text-gray-700 mb-1">
-                                        Jornada {isLoadingRounds && <span className="text-blue-500 animate-pulse text-xs">(Buscando actual...)</span>}
-                                    </label>
-                                    <select 
-                                        id="round-select" 
-                                        value={selectedRound} 
-                                        onChange={handleRoundChange} 
-                                        disabled={isLoadingRounds || availableRounds.length === 0} 
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100 disabled:text-gray-400"
+                <form onSubmit={handleSubmit} className="flex flex-col xl:flex-row gap-8">
+                    
+                    {/* COLUMNA IZQUIERDA: CONFIGURACIÓN Y SELECCIÓN */}
+                    <div className="xl:w-2/3 space-y-8"> 
+                        
+                        {/* 1. SELECCIÓN DE LIGA (VISUAL) */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                                <span className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center mr-3 text-sm">1</span>
+                                Selecciona la Liga
+                            </h3>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {DUMMY_LEAGUES.map(league => (
+                                    <button
+                                        type="button"
+                                        key={league.id}
+                                        onClick={() => handleLeagueClick(league.id)}
+                                        className={`relative group flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 ${
+                                            selectedLeagueId === league.id 
+                                            ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200 ring-offset-2' 
+                                            : 'border-gray-100 hover:border-blue-200 hover:bg-gray-50'
+                                        }`}
                                     >
-                                        <option value="">
-                                            {isLoadingRounds ? "Cargando jornadas..." : "-- Selecciona una Jornada --"}
-                                        </option>
-                                        {availableRounds.map(round => (
-                                            <option key={round} value={round}>
-                                                {round} {round === selectedRound ? "(Actual)" : ""}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                            {isLoading && <p className="text-center text-blue-500 font-semibold mt-4 animate-pulse">Cargando partidos de la API...</p>}
-                            {apiError && <p className="text-center text-red-500 text-sm font-bold mt-2">{apiError}</p>}
-                        </section>
-
-                        <section className="space-y-4">
-                            <h3 className="text-xl font-semibold text-gray-800">3. Partidos Disponibles</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                                {apiFixtures.length === 0 && !isLoading && (
-                                    <div className="col-span-2 text-center py-8 text-gray-400 italic border-2 border-dashed rounded-xl">
-                                        Selecciona una liga y jornada para ver los partidos.
-                                    </div>
-                                )}
-                                {apiFixtures.map((fixtureData) => {
-                                    const fixture = fixtureData.fixture;
-                                    const teams = fixtureData.teams;
-                                    const date = new Date(fixture.date);
-                                    const isSelected = selectedFixtures.some(f => f.fixture.id === fixture.id);
-                                    return (
-                                        <div 
-                                            key={fixture.id} onClick={() => toggleFixtureSelection(fixtureData)}
-                                            className={`p-4 rounded-xl shadow-sm cursor-pointer transition-all duration-200 border-2 relative overflow-hidden group
-                                                        ${isSelected ? 'border-green-500 bg-green-50 ring-1 ring-green-300' : 'border-gray-100 bg-white hover:border-blue-300 hover:shadow-md'}`}
-                                        >
-                                            <div className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider flex justify-between">
-                                                <span>{date.toLocaleDateString()}</span>
-                                                <span>{date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                        <img src={league.logo} alt={league.nameShort} className="h-12 object-contain mb-3 group-hover:scale-110 transition-transform" />
+                                        <span className={`font-bold text-sm ${selectedLeagueId === league.id ? 'text-blue-700' : 'text-gray-600'}`}>
+                                            {league.nameShort}
+                                        </span>
+                                        {selectedLeagueId === league.id && (
+                                            <div className="absolute top-2 right-2 text-blue-500">
+                                                <i className="fas fa-check-circle"></i>
                                             </div>
-                                            
-                                            <div className="flex justify-between items-center space-x-2">
-                                                <div className="flex flex-col items-center w-5/12 text-center group-hover:scale-105 transition-transform">
-                                                    <img src={teams.home.logo} alt={teams.home.name} className="w-10 h-10 mb-1 object-contain" />
-                                                    <span className="font-bold text-xs text-gray-800 leading-tight">{teams.home.nameShort || teams.home.name}</span>
-                                                </div>
-                                                <span className="text-xs font-black text-gray-300">VS</span>
-                                                <div className="flex flex-col items-center w-5/12 text-center group-hover:scale-105 transition-transform">
-                                                    <img src={teams.away.logo} alt={teams.away.name} className="w-10 h-10 mb-1 object-contain" />
-                                                    <span className="font-bold text-xs text-gray-800 leading-tight">{teams.away.nameShort || teams.away.name}</span>
-                                                </div>
-                                            </div>
-                                            
-                                            {isSelected && (
-                                                <div className="absolute top-0 right-0 bg-green-500 text-white text-[10px] px-2 py-1 rounded-bl-lg font-bold shadow-sm">
-                                                    SELECCIONADO
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </section>
-                    </div>
-
-                    <div className="lg:w-1/3 space-y-6">
-                        <div className="sticky top-6 bg-slate-900 text-white p-6 rounded-xl shadow-2xl">
-                            <div className="flex justify-between items-center border-b border-slate-700 pb-4 mb-4">
-                                <h3 className="text-lg font-bold text-blue-400">Tu Quiniela</h3>
-                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${selectedFixtures.length === MAX_FIXTURES ? 'bg-green-500 text-white' : 'bg-slate-700 text-gray-300'}`}>
-                                    {selectedFixtures.length} / {MAX_FIXTURES}
-                                </span>
-                            </div>
-                            
-                            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 mb-6 custom-scrollbar-dark">
-                                {selectedFixtures.length === 0 && (
-                                    <p className="text-slate-500 text-sm text-center italic py-4">Aún no has seleccionado partidos.</p>
-                                )}
-                                {selectedFixtures.sort((a, b) => new Date(a.fixture.date) - new Date(b.fixture.date)).map((f) => (
-                                    <div key={f.fixture.id} className="p-3 border border-slate-700 rounded-lg bg-slate-800 relative group hover:bg-slate-750 transition-colors">
-                                        <button 
-                                            type="button" 
-                                            onClick={() => toggleFixtureSelection(f)}
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
-                                            title="Eliminar partido"
-                                        >
-                                            ✕
-                                        </button>
-                                        
-                                        <div className="flex justify-between items-center text-sm">
-                                            <div className="flex items-center space-x-2 w-5/12 overflow-hidden">
-                                                <img src={f.teams.home.logo} className="w-5 h-5 object-contain" alt="" />
-                                                <span className="font-semibold truncate">{f.teams.home.nameShort || f.teams.home.name.substring(0, 10)}</span>
-                                            </div>
-                                            <span className="text-slate-500 text-xs">vs</span>
-                                            <div className="flex items-center justify-end space-x-2 w-5/12 overflow-hidden">
-                                                <span className="font-semibold truncate">{f.teams.away.nameShort || f.teams.away.name.substring(0, 10)}</span>
-                                                <img src={f.teams.away.logo} className="w-5 h-5 object-contain" alt="" />
-                                            </div>
-                                        </div>
-                                        <div className="text-[10px] text-slate-400 mt-2 text-center">
-                                            {new Date(f.fixture.date).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
-                                        </div>
-                                    </div>
+                                        )}
+                                    </button>
                                 ))}
                             </div>
+                        </div>
 
+                        {/* 2. DATOS GENERALES */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                                <span className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center mr-3 text-sm">2</span>
+                                Configuración General
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1">Título del Evento</label> 
+                                        <input 
+                                            name="title" 
+                                            type="text" 
+                                            required 
+                                            value={title} 
+                                            onChange={handleInputChange} 
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" 
+                                            placeholder="Ej: Gran Quiniela Jornada 10" 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                            Cierre de Apuestas <span className="text-blue-500 text-xs font-normal ml-1">(Automático -1h)</span>
+                                        </label> 
+                                        <input 
+                                            name="deadline" 
+                                            type="datetime-local" 
+                                            required 
+                                            value={deadline} 
+                                            onChange={handleInputChange} 
+                                            className={`w-full px-4 py-2 border rounded-lg bg-gray-50 focus:bg-white transition-colors ${deadlineError ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'}`} 
+                                        />
+                                        {deadlineError && <p className="text-red-500 text-xs mt-1 font-bold">{deadlineError}</p>}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="block text-sm font-semibold text-gray-700">Descripción / Premios</label>
+                                        <span className={`text-xs ${description.length >= MAX_DESCRIPTION_CHARS ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                                            {description.length}/{MAX_DESCRIPTION_CHARS}
+                                        </span>
+                                    </div>
+                                    <textarea 
+                                        name="description" 
+                                        rows="4" 
+                                        value={description} 
+                                        onChange={handleInputChange} 
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none" 
+                                        placeholder="Describe los premios o reglas especiales..." 
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. PARTIDOS */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                                <h3 className="text-lg font-bold text-gray-800 flex items-center">
+                                    <span className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center mr-3 text-sm">3</span>
+                                    Seleccionar Partidos
+                                </h3>
+                                
+                                {/* Controles: Jornada y Buscador */}
+                                <div className="flex gap-3 w-full md:w-auto">
+                                    <div className="relative w-full md:w-48">
+                                        <select 
+                                            value={selectedRound} 
+                                            onChange={handleRoundChange} 
+                                            disabled={isLoadingRounds || availableRounds.length === 0} 
+                                            className="w-full pl-3 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white text-sm"
+                                        >
+                                            <option value="">{isLoadingRounds ? "Cargando..." : "-- Jornada --"}</option>
+                                            {availableRounds.map(round => (
+                                                <option key={round} value={round}>{round}</option>
+                                            ))}
+                                        </select>
+                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-500">
+                                            <i className="fas fa-chevron-down text-xs"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="relative w-full md:w-48">
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar equipo..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                                        />
+                                        <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Grid de Partidos */}
+                            <div className="min-h-[300px]">
+                                {isLoading ? (
+                                    <div className="flex flex-col items-center justify-center h-48 text-blue-500">
+                                        <i className="fas fa-circle-notch fa-spin text-3xl mb-3"></i>
+                                        <p>Cargando partidos...</p>
+                                    </div>
+                                ) : apiError ? (
+                                    <div className="p-4 bg-red-50 text-red-600 rounded-lg text-center border border-red-100">
+                                        <i className="fas fa-exclamation-triangle mr-2"></i> {apiError}
+                                    </div>
+                                ) : filteredFixtures.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center h-48 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+                                        <i className="fas fa-futbol text-3xl mb-2 opacity-50"></i>
+                                        <p>No hay partidos disponibles.</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                                        {filteredFixtures.map((fixtureData) => {
+                                            const fixture = fixtureData.fixture;
+                                            const teams = fixtureData.teams;
+                                            const date = new Date(fixture.date);
+                                            const isSelected = selectedFixtures.some(f => f.fixture.id === fixture.id);
+                                            
+                                            return (
+                                                <div 
+                                                    key={fixture.id} 
+                                                    onClick={() => toggleFixtureSelection(fixtureData)}
+                                                    className={`
+                                                        relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 group
+                                                        ${isSelected 
+                                                            ? 'border-green-500 bg-green-50 shadow-sm' 
+                                                            : 'border-gray-100 bg-white hover:border-blue-300 hover:shadow-md'}
+                                                    `}
+                                                >
+                                                    {/* Badge de fecha */}
+                                                    <div className="flex justify-between text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">
+                                                        <span>{date.toLocaleDateString()}</span>
+                                                        <span>{date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    </div>
+                                                    
+                                                    {/* Equipos */}
+                                                    <div className="flex items-center justify-between">
+                                                        {/* Local */}
+                                                        <div className="flex flex-col items-center w-5/12">
+                                                            <img src={teams.home.logo} alt={teams.home.name} className="w-10 h-10 object-contain mb-2 group-hover:scale-110 transition-transform" />
+                                                            <span className="text-xs font-bold text-center leading-tight">{teams.home.nameShort || teams.home.name}</span>
+                                                        </div>
+                                                        
+                                                        <span className="text-gray-300 font-black text-sm">VS</span>
+                                                        
+                                                        {/* Visitante */}
+                                                        <div className="flex flex-col items-center w-5/12">
+                                                            <img src={teams.away.logo} alt={teams.away.name} className="w-10 h-10 object-contain mb-2 group-hover:scale-110 transition-transform" />
+                                                            <span className="text-xs font-bold text-center leading-tight">{teams.away.nameShort || teams.away.name}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Checkmark animado */}
+                                                    {isSelected && (
+                                                        <div className="absolute top-2 right-2 bg-green-500 text-white w-6 h-6 rounded-full flex items-center justify-center shadow-sm animate-bounce-in">
+                                                            <i className="fas fa-check text-xs"></i>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* COLUMNA DERECHA: RESUMEN FIJO (STICKY) */}
+                    <div className="xl:w-1/3">
+                        <div className="sticky top-6 bg-slate-900 text-white p-6 rounded-2xl shadow-2xl ring-1 ring-white/10">
+                            
+                            {/* Cabecera del Resumen */}
+                            <div className="flex justify-between items-center border-b border-slate-700 pb-4 mb-4">
+                                <h3 className="text-lg font-bold text-blue-400">Resumen</h3>
+                                <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-bold border ${selectedFixtures.length === MAX_FIXTURES ? 'bg-green-500 border-green-500 text-white' : 'bg-slate-800 border-slate-600 text-gray-300'}`}>
+                                    <span>{selectedFixtures.length} / {MAX_FIXTURES}</span>
+                                </div>
+                            </div>
+                            
+                            {/* Lista de Partidos Seleccionados */}
+                            <div className="space-y-3 max-h-[calc(100vh-350px)] overflow-y-auto pr-2 custom-scrollbar-dark mb-6">
+                                {selectedFixtures.length === 0 ? (
+                                    <div className="text-center py-10 text-slate-600">
+                                        <i className="fas fa-clipboard-list text-4xl mb-3 opacity-50"></i>
+                                        <p className="text-sm">Selecciona partidos para armar tu quiniela.</p>
+                                    </div>
+                                ) : (
+                                    selectedFixtures.sort((a, b) => new Date(a.fixture.date) - new Date(b.fixture.date)).map((f) => (
+                                        <div key={f.fixture.id} className="group relative bg-slate-800/50 hover:bg-slate-800 p-3 rounded-lg border border-slate-700 transition-colors">
+                                            
+                                            {/* Botón Eliminar */}
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); toggleFixtureSelection(f); }}
+                                                className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-all transform hover:scale-110 z-10"
+                                            >
+                                                <i className="fas fa-times text-xs"></i>
+                                            </button>
+
+                                            <div className="flex items-center justify-between text-sm">
+                                                <div className="flex items-center gap-2 w-5/12 overflow-hidden">
+                                                    <img src={f.teams.home.logo} className="w-5 h-5 object-contain" alt="" />
+                                                    <span className="truncate font-medium text-slate-200">{f.teams.home.nameShort || f.teams.home.name.substring(0, 10)}</span>
+                                                </div>
+                                                <span className="text-slate-600 text-xs font-bold">VS</span>
+                                                <div className="flex items-center justify-end gap-2 w-5/12 overflow-hidden">
+                                                    <span className="truncate font-medium text-slate-200 text-right">{f.teams.away.nameShort || f.teams.away.name.substring(0, 10)}</span>
+                                                    <img src={f.teams.away.logo} className="w-5 h-5 object-contain" alt="" />
+                                                </div>
+                                            </div>
+                                            <div className="mt-2 text-[10px] text-center text-slate-500 font-mono">
+                                                {new Date(f.fixture.date).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Botón de Acción Principal */}
                             <button 
                                 type="submit" 
                                 disabled={!isReadyToSubmit || isSubmittingRef.current} 
-                                className="w-full py-4 px-4 text-sm font-bold rounded-xl text-white bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 focus:ring-4 focus:ring-blue-500/30 transition-all duration-300 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed shadow-lg"
+                                className="w-full py-4 px-6 rounded-xl font-bold text-sm tracking-wide text-white bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 focus:ring-4 focus:ring-blue-500/30 shadow-lg disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed transition-all transform active:scale-95"
                             >
                                 {isSubmittingRef.current ? (
                                     <span className="flex items-center justify-center gap-2">
-                                        <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                        CREANDO...
+                                        <i className="fas fa-spinner fa-spin"></i> CREANDO...
                                     </span>
-                                ) : 'CONFIRMAR QUINIELA'}
+                                ) : (
+                                    <span className="flex items-center justify-center gap-2">
+                                        CONFIRMAR QUINIELA <i className="fas fa-arrow-right"></i>
+                                    </span>
+                                )}
                             </button>
+                            
+                            {!isReadyToSubmit && selectedFixtures.length > 0 && (
+                                <p className="text-center text-xs text-slate-500 mt-3">
+                                    Completa todos los campos y selecciona {MAX_FIXTURES} partidos.
+                                </p>
+                            )}
                         </div>
                     </div>
                 </form>
