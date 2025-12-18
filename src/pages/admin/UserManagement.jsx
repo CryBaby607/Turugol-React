@@ -4,12 +4,12 @@ import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import DashboardLayout from '../../components/DashboardLayout';
 
 const UserManagement = () => {
+    // ... (toda tu lógica de estados y efectos se mantiene igual) ...
     const [users, setUsers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [selectedUserHistory, setSelectedUserHistory] = useState(null);
 
-    // 1. Cargar listado maestro de usuarios
     useEffect(() => {
         const fetchUsers = async () => {
             try {
@@ -28,11 +28,9 @@ const UserManagement = () => {
         fetchUsers();
     }, []);
 
-    // 2. Función para ver historial (simulada según estructura de participaciones)
     const viewHistory = async (userId) => {
         setLoading(true);
         try {
-            // Suponiendo una colección 'participaciones' que vincula user e info de quiniela
             const q = query(collection(db, 'participaciones'), where('userId', '==', userId));
             const snap = await getDocs(q);
             const history = snap.docs.map(doc => doc.data());
@@ -50,7 +48,8 @@ const UserManagement = () => {
     );
 
     return (
-        <DashboardLayout title="Gestión de Usuarios">
+        // 🔴 AQUÍ ESTABA EL ERROR: Faltaba isAdmin={true}
+        <DashboardLayout title="Gestión de Usuarios" isAdmin={true}>
             <div className="p-6">
                 {/* Buscador */}
                 <div className="mb-6">
@@ -97,7 +96,7 @@ const UserManagement = () => {
                     </table>
                 </div>
 
-                {/* Modal de Historial (Condicional) */}
+                {/* Modal de Historial */}
                 {selectedUserHistory && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                         <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
