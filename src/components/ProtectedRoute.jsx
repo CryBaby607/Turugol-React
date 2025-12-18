@@ -1,36 +1,33 @@
-// src/components/ProtectedRoute.jsx
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import useAuthStatusAndRole from '../hooks/useAuthStatusAndRole';
 
-const ProtectedRoute = ({ requiredRole = null, redirectPath = '/login' }) => {
+const ProtectedRoute = ({ requiredRole }) => {
+    // 1. Obtenemos también 'loadingRole' del hook
     const { user, authReady, role, loadingRole } = useAuthStatusAndRole();
 
+    // 2. Si la autenticación no está lista O el rol se está buscando en la BD, mostramos carga
+    // Esto evita que te redirija mientras verifica quién eres.
     if (!authReady || loadingRole) {
-        // Muestra un loader mientras Firebase Auth y el Rol se inicializan
-        return <div className="text-center py-20 text-gray-600">Verificando sesión y permisos...</div>;
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        );
     }
 
+    // 3. Si no hay usuario logueado, al login
     if (!user) {
-        // Si no está autenticado, redirige al login
-        return <Navigate to={redirectPath} replace />;
+        return <Navigate to="/login" replace />;
     }
 
+    // 4. Si se requiere un rol específico (ej: 'admin') y el usuario no lo tiene, al Home
     if (requiredRole && role !== requiredRole) {
-        // Si se requiere un rol específico y el usuario no lo tiene,
-        // redirigimos a la página de inicio o a una página de acceso denegado.
-        const unauthorizedRedirect = role === 'admin' ? '/dashboard/admin' : '/dashboard/user';
-        
-        // Si intenta acceder a una ruta de admin siendo user, lo mandamos a su dashboard
-        if (requiredRole === 'admin' && role === 'user') {
-             return <Navigate to={unauthorizedRedirect} replace />;
-        }
-        
-        // Caso de que sea user intentando acceder a admin
-        return <Navigate to="/" replace />; 
+        console.warn(`Acceso denegado. Rol requerido: ${requiredRole}, Rol actual: ${role}`);
+        return <Navigate to="/" replace />;
     }
 
-    // Si el usuario está autenticado y tiene el rol correcto (o no se requiere un rol), renderiza el contenido
+    // 5. Todo correcto, renderiza la ruta hija
     return <Outlet />;
 };
 
