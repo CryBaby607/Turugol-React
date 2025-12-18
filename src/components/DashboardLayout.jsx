@@ -16,7 +16,7 @@ const Sidebar = ({ isAdmin, isOpen, toggleSidebar }) => {
           ]
         : [
               { path: '/dashboard/user', name: 'Mis Quinielas', icon: 'fas fa-trophy' },
-              { path: '/dashboard/user/avaliblequinelas', name: 'Quinielas Disponibles', icon: 'fas fa-clipboard-list' }, 
+              { path: '/dashboard/user/available-quinielas', name: 'Quinielas Disponibles', icon: 'fas fa-clipboard-list' }, 
               { path: '/dashboard/user/profile', name: 'Mi Perfil', icon: 'fas fa-user-circle' },
               { path: '/dashboard/user/history', name: 'Historial', icon: 'fas fa-history' },
           ];
