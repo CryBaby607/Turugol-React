@@ -1,17 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { db, auth } from '../../firebase/config'; 
-import { doc, setDoc, getDoc, deleteDoc, collection } from 'firebase/firestore'; 
+import { doc, setDoc, getDoc, deleteDoc, collection } from 'firebase/firestore';
+import { fetchFromApi } from '../../services/footballApi';
 
 const QUINIELA_BORRADORES_COLLECTION = "quinielaBorradores";
 const QUINIELAS_FINAL_COLLECTION = "quinielas";
-
-// 1. CAMBIO: URL DIRECTA Y HEADERS
-const API_BASE_URL = 'https://v3.football.api-sports.io/fixtures'; 
-const API_HEADERS = {
-    'x-rapidapi-key': import.meta.env.VITE_API_FOOTBALL_KEY,
-    'x-rapidapi-host': 'v3.football.api-sports.io'
-};
 
 const SEASON_YEAR = 2025; 
 const MAX_FIXTURES = 9;
@@ -48,7 +42,7 @@ const CreateQuiniela = () => {
     const initialLoadRef = useRef(true); 
     const isSubmittingRef = useRef(false);
 
-    // --- FUNCIONES FIREBASE (Sin cambios) ---
+    // --- FUNCIONES FIREBASE (Se mantienen igual) ---
     const getBorradorRef = (uid) => doc(db, QUINIELA_BORRADORES_COLLECTION, uid);
 
     const saveDraftToFirebase = async (data, uid) => {
@@ -72,7 +66,7 @@ const CreateQuiniela = () => {
         return quinielaRef.id;
     };
 
-    // --- 1. LÓGICA AUTOMÁTICA DE FECHA (Sin cambios) ---
+    // --- EFECTOS DE FECHA Y GUARDADO (Se mantienen igual) ---
     useEffect(() => {
         if (selectedFixtures.length > 0) {
             const earliestMatchTimestamp = Math.min(
@@ -80,15 +74,12 @@ const CreateQuiniela = () => {
             );
             const oneHourBefore = new Date(earliestMatchTimestamp - 3600000);
             const tzOffset = oneHourBefore.getTimezoneOffset() * 60000;
-            const localISOTime = new Date(oneHourBefore.getTime() - tzOffset)
-                                .toISOString()
-                                .slice(0, 16);
+            const localISOTime = new Date(oneHourBefore.getTime() - tzOffset).toISOString().slice(0, 16);
             setDeadline(localISOTime);
             setDeadlineError(''); 
         }
     }, [selectedFixtures]);
 
-    // --- 2. CARGAR BORRADOR (Sin cambios) ---
     useEffect(() => {
         if (!currentAdminId) return; 
         const loadInitialDraft = async () => {
@@ -110,7 +101,6 @@ const CreateQuiniela = () => {
         loadInitialDraft();
     }, [currentAdminId]); 
 
-    // --- 3. AUTO-GUARDADO (Sin cambios) ---
     useEffect(() => {
         if (initialLoadRef.current || !currentAdminId || isSubmittingRef.current) return; 
         setIsSaving(true);
@@ -130,7 +120,7 @@ const CreateQuiniela = () => {
         return () => clearTimeout(timer); 
     }, [title, description, deadline, selectedFixtures, selectedLeagueId, selectedRound, currentAdminId]);
 
-    // --- 4. CARGAR JORNADAS (ACTUALIZADO CON HEADERS) ---
+    // --- 3. CARGAR JORNADAS (USANDO SERVICIO) ---
     useEffect(() => {
         const fetchRoundsForLeague = async () => {
             if (!selectedLeagueId) return;
@@ -138,17 +128,15 @@ const CreateQuiniela = () => {
             setAvailableRounds([]); 
             
             try {
-                // CAMBIO: Se agrega { headers: API_HEADERS }
-                const allRoundsRes = await fetch(`${API_BASE_URL}/rounds?league=${selectedLeagueId}&season=${SEASON_YEAR}`, { headers: API_HEADERS });
-                const allRoundsData = await allRoundsRes.json();
+                // Usamos el helper centralizado. Nota que el endpoint es 'fixtures/rounds'
+                const allRoundsData = await fetchFromApi('fixtures/rounds', `?league=${selectedLeagueId}&season=${SEASON_YEAR}`);
                 
                 if (allRoundsData.response) {
                     setAvailableRounds(allRoundsData.response);
                 }
 
-                // CAMBIO: Se agrega { headers: API_HEADERS }
-                const currentRoundRes = await fetch(`${API_BASE_URL}/rounds?league=${selectedLeagueId}&season=${SEASON_YEAR}&current=true`, { headers: API_HEADERS });
-                const currentRoundData = await currentRoundRes.json();
+                // Obtener jornada actual
+                const currentRoundData = await fetchFromApi('fixtures/rounds', `?league=${selectedLeagueId}&season=${SEASON_YEAR}&current=true`);
 
                 if (currentRoundData.response && currentRoundData.response.length > 0) {
                     setSelectedRound(currentRoundData.response[0]);
@@ -214,17 +202,14 @@ const CreateQuiniela = () => {
         });
     };
 
-    // --- FETCH FIXTURES (ACTUALIZADO CON HEADERS) ---
+    // --- 4. FETCH FIXTURES (USANDO SERVICIO) ---
     const fetchFixtures = useCallback(async (leagueId, roundName) => {
         if (!leagueId || !roundName) return;
         setIsLoading(true);
         setApiError(null);
         try {
-            const API_URL = `${API_BASE_URL}?league=${leagueId}&season=${SEASON_YEAR}&round=${encodeURIComponent(roundName)}&timezone=America/Mexico_City`;
-            
-            // CAMBIO: Se agrega { headers: API_HEADERS }
-            const response = await fetch(API_URL, { headers: API_HEADERS });
-            const data = await response.json();
+            // Usamos el helper. Nota que el endpoint es 'fixtures'
+            const data = await fetchFromApi('fixtures', `?league=${leagueId}&season=${SEASON_YEAR}&round=${encodeURIComponent(roundName)}&timezone=America/Mexico_City`);
             setApiFixtures(data.response || []);
         } catch (err) {
             setApiError(`Fallo al cargar partidos`);
@@ -283,11 +268,9 @@ const CreateQuiniela = () => {
 
     const isReadyToSubmit = title && deadline && selectedFixtures.length === MAX_FIXTURES && !deadlineError && !isLoading;
 
+    // --- JSX (SIN CAMBIOS VISUALES) ---
     return (
         <DashboardLayout isAdmin={true}>
-            {/* ... EL RESTO DEL JSX SIGUE IGUAL ... */}
-            {/* Para no alargar demasiado la respuesta, asumo que mantienes el JSX intacto 
-                ya que solo cambiamos la lógica de fetch arriba */}
              <div className="p-6 max-w-screen-xl mx-auto w-full"> 
                 <h2 className="text-3xl font-bold text-red-700 mb-8 border-b pb-3">
                     ✍️ Crear Nueva Quiniela (Máx. {MAX_FIXTURES} Partidos)

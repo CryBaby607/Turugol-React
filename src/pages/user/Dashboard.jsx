@@ -1,5 +1,3 @@
-// src/pages/user/Dashboard.jsx
-
 import React from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
 

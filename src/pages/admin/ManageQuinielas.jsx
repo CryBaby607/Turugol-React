@@ -2,13 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { db } from '../../firebase/config';
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
-
-// 1. CAMBIO: URL DIRECTA Y HEADERS
-const API_BASE_URL = 'https://v3.football.api-sports.io/fixtures'; 
-const API_HEADERS = {
-    'x-rapidapi-key': import.meta.env.VITE_API_FOOTBALL_KEY,
-    'x-rapidapi-host': 'v3.football.api-sports.io'
-};
+import { fetchFromApi } from '../../services/footballApi';
 
 const ManageQuinielas = () => {
     const [quinielas, setQuinielas] = useState([]);
@@ -16,7 +10,6 @@ const ManageQuinielas = () => {
     const [selectedQuiniela, setSelectedQuiniela] = useState(null);
     const [editingScores, setEditingScores] = useState({});
     
-    // Estado para feedback visual de la sincronización
     const [isSyncing, setIsSyncing] = useState(false);
 
     // 1. Cargar todas las quinielas (Sin cambios)
@@ -40,7 +33,6 @@ const ManageQuinielas = () => {
         fetchQuinielas();
     }, []);
 
-    // 2. Manejar apertura del modal (Sin cambios)
     const handleOpenResults = (quiniela) => {
         setSelectedQuiniela(quiniela);
         const initialScores = {};
@@ -55,18 +47,15 @@ const ManageQuinielas = () => {
         setEditingScores(initialScores);
     };
 
-    // 3. ACTUALIZADO: Sincronizar con la API usando HEADERS
+    // 3. ACTUALIZADO: Sincronización usando el servicio
     const syncWithApi = async () => {
         if (!selectedQuiniela) return;
         setIsSyncing(true);
         
         try {
             const promises = selectedQuiniela.fixtures.map(async (fixture) => {
-                // CAMBIO: URL completa y headers
-                const response = await fetch(`${API_BASE_URL}?id=${fixture.id}&timezone=America/Mexico_City`, {
-                    headers: API_HEADERS
-                });
-                const data = await response.json();
+                // Usamos fetchFromApi. Endpoint "fixtures", queryParam "?id=..."
+                const data = await fetchFromApi('fixtures', `?id=${fixture.id}&timezone=America/Mexico_City`);
                 return data.response[0]; 
             });
 

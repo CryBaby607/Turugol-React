@@ -1,5 +1,3 @@
-// src/hooks/useAuthStatusAndRole.js
-
 import { useState, useEffect } from 'react';
 import { auth, db } from '../firebase/config'; // Ajusta la ruta si es necesario
 import { doc, getDoc } from 'firebase/firestore';
@@ -37,7 +35,7 @@ const useAuthStatusAndRole = () => {
                     setLoadingRole(false);
                 }
             } else {
-                setRole('guest'); // No autenticado
+                setRole('guest');
             }
         });
 

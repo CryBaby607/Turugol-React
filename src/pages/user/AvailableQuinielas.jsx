@@ -1,4 +1,3 @@
-// src/pages/user/AvailableQuinielas.jsx
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase/config';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
