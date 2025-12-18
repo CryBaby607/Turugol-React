@@ -132,7 +132,7 @@ const Register = () => {
                 <div className="text-center">
                     <Link to="/" className="inline-block">
                         <div className="p-2 rounded-lg font-bold text-4xl">
-                            <span className="text-black">TURI</span>
+                            <span className="text-black">TURU</span>
                             <span className="text-emerald-500">GOL</span>
                         </div>
                     </Link>

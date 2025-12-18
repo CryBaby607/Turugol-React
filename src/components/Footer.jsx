@@ -10,7 +10,7 @@ const Footer = () => {
           <div className="lg:w-2/5">
             <div className="mb-8">
               <div className="p-2 rounded-lg font-bold text-2xl inline-block mb-4">
-                <span className="text-white">TURI</span>
+                <span className="text-white">TURU</span>
                 <span className="text-emerald-500">GOL</span>
               </div>
               <p className="text-gray-400 max-w-md mb-8">

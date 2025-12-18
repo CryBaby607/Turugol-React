@@ -8,7 +8,7 @@ const Header = ({ isAuth = false }) => {
         <div className="flex items-center">
           <Link to="/" className="flex items-center">
             <div className="p-2 rounded-lg font-bold text-2xl">
-              <span className="text-white">TURI</span>
+              <span className="text-white">TURO</span>
               <span className="text-emerald-500">GOL</span>
             </div>
           </Link>
