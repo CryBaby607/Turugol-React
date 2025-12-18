@@ -3,8 +3,12 @@ import DashboardLayout from '../../components/DashboardLayout';
 import { db } from '../../firebase/config';
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 
-// Asegúrate de que esta URL coincida con tu proxy o configuración de Vite
-const API_BASE_URL = '/api-football/fixtures'; 
+// 1. CAMBIO: URL DIRECTA Y HEADERS
+const API_BASE_URL = 'https://v3.football.api-sports.io/fixtures'; 
+const API_HEADERS = {
+    'x-rapidapi-key': import.meta.env.VITE_API_FOOTBALL_KEY,
+    'x-rapidapi-host': 'v3.football.api-sports.io'
+};
 
 const ManageQuinielas = () => {
     const [quinielas, setQuinielas] = useState([]);
@@ -15,7 +19,7 @@ const ManageQuinielas = () => {
     // Estado para feedback visual de la sincronización
     const [isSyncing, setIsSyncing] = useState(false);
 
-    // 1. Cargar todas las quinielas
+    // 1. Cargar todas las quinielas (Sin cambios)
     const fetchQuinielas = async () => {
         setLoading(true);
         try {
@@ -36,7 +40,7 @@ const ManageQuinielas = () => {
         fetchQuinielas();
     }, []);
 
-    // 2. Manejar apertura del modal
+    // 2. Manejar apertura del modal (Sin cambios)
     const handleOpenResults = (quiniela) => {
         setSelectedQuiniela(quiniela);
         const initialScores = {};
@@ -51,30 +55,27 @@ const ManageQuinielas = () => {
         setEditingScores(initialScores);
     };
 
-    // 3. NUEVA FUNCIÓN: Sincronizar con la API
+    // 3. ACTUALIZADO: Sincronizar con la API usando HEADERS
     const syncWithApi = async () => {
         if (!selectedQuiniela) return;
         setIsSyncing(true);
         
         try {
-            // Creamos una lista de promesas para consultar cada partido
-            // NOTA: Si son muchos partidos, sería mejor usar el endpoint 'ids' de la API si tu plan lo permite,
-            // pero para <10 partidos, hacer llamadas individuales en paralelo funciona bien.
             const promises = selectedQuiniela.fixtures.map(async (fixture) => {
-                const response = await fetch(`${API_BASE_URL}?id=${fixture.id}&timezone=America/Mexico_City`);
+                // CAMBIO: URL completa y headers
+                const response = await fetch(`${API_BASE_URL}?id=${fixture.id}&timezone=America/Mexico_City`, {
+                    headers: API_HEADERS
+                });
                 const data = await response.json();
-                return data.response[0]; // Retorna el objeto del partido actualizado
+                return data.response[0]; 
             });
 
             const results = await Promise.all(promises);
             
-            // Actualizamos el estado local con los datos frescos
             const newScores = { ...editingScores };
             let updatesCount = 0;
 
             results.forEach(match => {
-                // Solo actualizamos si el partido ha terminado o está en juego
-                // Status 'FT' = Full Time, 'AET' = After Extra Time, 'PEN' = Penalties
                 if (match && ['FT', 'AET', 'PEN'].includes(match.fixture.status.short)) {
                     newScores[match.fixture.id] = {
                         home: match.goals.home,

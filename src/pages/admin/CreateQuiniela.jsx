@@ -5,8 +5,15 @@ import { doc, setDoc, getDoc, deleteDoc, collection } from 'firebase/firestore';
 
 const QUINIELA_BORRADORES_COLLECTION = "quinielaBorradores";
 const QUINIELAS_FINAL_COLLECTION = "quinielas";
-const API_BASE_URL = '/api-football/fixtures'; 
-const SEASON_YEAR = 2025; // Asegúrate de actualizar esto según la temporada actual de las ligas
+
+// 1. CAMBIO: URL DIRECTA Y HEADERS
+const API_BASE_URL = 'https://v3.football.api-sports.io/fixtures'; 
+const API_HEADERS = {
+    'x-rapidapi-key': import.meta.env.VITE_API_FOOTBALL_KEY,
+    'x-rapidapi-host': 'v3.football.api-sports.io'
+};
+
+const SEASON_YEAR = 2025; 
 const MAX_FIXTURES = 9;
 const MAX_DESCRIPTION_CHARS = 200;
 
@@ -20,20 +27,18 @@ const CreateQuiniela = () => {
     const user = auth.currentUser; 
     const currentAdminId = user ? user.uid : null; 
 
-    // --- ESTADOS DEL FORMULARIO ---
+    // --- ESTADOS ---
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [deadline, setDeadline] = useState(''); 
     const [selectedLeagueId, setSelectedLeagueId] = useState(DUMMY_LEAGUES[0].id);
     const [selectedRound, setSelectedRound] = useState(''); 
     
-    // Estados para lógica dinámica
     const [availableRounds, setAvailableRounds] = useState([]); 
     const [isLoadingRounds, setIsLoadingRounds] = useState(false);
     const [apiFixtures, setApiFixtures] = useState([]); 
     const [selectedFixtures, setSelectedFixtures] = useState([]); 
     
-    // Estados de UI/UX
     const [isLoading, setIsLoading] = useState(false);
     const [apiError, setApiError] = useState(null);
     const [isSaving, setIsSaving] = useState(false); 
@@ -43,7 +48,7 @@ const CreateQuiniela = () => {
     const initialLoadRef = useRef(true); 
     const isSubmittingRef = useRef(false);
 
-    // --- FUNCIONES FIREBASE ---
+    // --- FUNCIONES FIREBASE (Sin cambios) ---
     const getBorradorRef = (uid) => doc(db, QUINIELA_BORRADORES_COLLECTION, uid);
 
     const saveDraftToFirebase = async (data, uid) => {
@@ -67,29 +72,23 @@ const CreateQuiniela = () => {
         return quinielaRef.id;
     };
 
-    // --- 1. LÓGICA AUTOMÁTICA DE FECHA DE CIERRE ---
+    // --- 1. LÓGICA AUTOMÁTICA DE FECHA (Sin cambios) ---
     useEffect(() => {
         if (selectedFixtures.length > 0) {
-            // Encontrar la fecha del partido más próximo (el primero en jugarse)
             const earliestMatchTimestamp = Math.min(
                 ...selectedFixtures.map(f => new Date(f.fixture.date).getTime())
             );
-
-            // Restar 1 hora (3600000 milisegundos)
             const oneHourBefore = new Date(earliestMatchTimestamp - 3600000);
-
-            // Ajustar a la zona horaria local para el input datetime-local
             const tzOffset = oneHourBefore.getTimezoneOffset() * 60000;
             const localISOTime = new Date(oneHourBefore.getTime() - tzOffset)
                                 .toISOString()
                                 .slice(0, 16);
-
             setDeadline(localISOTime);
             setDeadlineError(''); 
         }
     }, [selectedFixtures]);
 
-    // --- 2. CARGAR BORRADOR INICIAL ---
+    // --- 2. CARGAR BORRADOR (Sin cambios) ---
     useEffect(() => {
         if (!currentAdminId) return; 
         const loadInitialDraft = async () => {
@@ -98,9 +97,7 @@ const CreateQuiniela = () => {
                 if (draft) {
                     setTitle(draft.title || '');
                     setDescription(draft.description || '');
-                    // No sobreescribimos deadline si hay fixtures, ya que el efecto de arriba lo recalculará
                     if (!draft.selectedFixtures?.length) setDeadline(draft.deadline || '');
-                    
                     setSelectedFixtures(draft.selectedFixtures || []);
                     setSelectedLeagueId(draft.selectedLeagueId || DUMMY_LEAGUES[0].id);
                     if (draft.selectedRound) setSelectedRound(draft.selectedRound);
@@ -113,7 +110,7 @@ const CreateQuiniela = () => {
         loadInitialDraft();
     }, [currentAdminId]); 
 
-    // --- 3. AUTO-GUARDADO DE BORRADOR ---
+    // --- 3. AUTO-GUARDADO (Sin cambios) ---
     useEffect(() => {
         if (initialLoadRef.current || !currentAdminId || isSubmittingRef.current) return; 
         setIsSaving(true);
@@ -133,7 +130,7 @@ const CreateQuiniela = () => {
         return () => clearTimeout(timer); 
     }, [title, description, deadline, selectedFixtures, selectedLeagueId, selectedRound, currentAdminId]);
 
-    // --- 4. CARGAR JORNADAS DINÁMICAMENTE ---
+    // --- 4. CARGAR JORNADAS (ACTUALIZADO CON HEADERS) ---
     useEffect(() => {
         const fetchRoundsForLeague = async () => {
             if (!selectedLeagueId) return;
@@ -141,22 +138,21 @@ const CreateQuiniela = () => {
             setAvailableRounds([]); 
             
             try {
-                // Obtener TODAS las rondas
-                const allRoundsRes = await fetch(`${API_BASE_URL}/rounds?league=${selectedLeagueId}&season=${SEASON_YEAR}`);
+                // CAMBIO: Se agrega { headers: API_HEADERS }
+                const allRoundsRes = await fetch(`${API_BASE_URL}/rounds?league=${selectedLeagueId}&season=${SEASON_YEAR}`, { headers: API_HEADERS });
                 const allRoundsData = await allRoundsRes.json();
                 
                 if (allRoundsData.response) {
                     setAvailableRounds(allRoundsData.response);
                 }
 
-                // Obtener la ronda ACTUAL para pre-seleccionar
-                const currentRoundRes = await fetch(`${API_BASE_URL}/rounds?league=${selectedLeagueId}&season=${SEASON_YEAR}&current=true`);
+                // CAMBIO: Se agrega { headers: API_HEADERS }
+                const currentRoundRes = await fetch(`${API_BASE_URL}/rounds?league=${selectedLeagueId}&season=${SEASON_YEAR}&current=true`, { headers: API_HEADERS });
                 const currentRoundData = await currentRoundRes.json();
 
                 if (currentRoundData.response && currentRoundData.response.length > 0) {
                     setSelectedRound(currentRoundData.response[0]);
                 } else if (allRoundsData.response && allRoundsData.response.length > 0) {
-                    // Si no hay actual (fin de temporada), seleccionar la última
                     setSelectedRound(allRoundsData.response[allRoundsData.response.length - 1]);
                 }
 
@@ -218,13 +214,16 @@ const CreateQuiniela = () => {
         });
     };
 
+    // --- FETCH FIXTURES (ACTUALIZADO CON HEADERS) ---
     const fetchFixtures = useCallback(async (leagueId, roundName) => {
         if (!leagueId || !roundName) return;
         setIsLoading(true);
         setApiError(null);
         try {
             const API_URL = `${API_BASE_URL}?league=${leagueId}&season=${SEASON_YEAR}&round=${encodeURIComponent(roundName)}&timezone=America/Mexico_City`;
-            const response = await fetch(API_URL);
+            
+            // CAMBIO: Se agrega { headers: API_HEADERS }
+            const response = await fetch(API_URL, { headers: API_HEADERS });
             const data = await response.json();
             setApiFixtures(data.response || []);
         } catch (err) {
@@ -252,7 +251,7 @@ const CreateQuiniela = () => {
                 deadline, 
                 createdBy: currentAdminId, 
                 createdAt: new Date().toISOString(),
-                status: 'open' // Estado inicial explícito
+                status: 'open' 
             },
             fixtures: selectedFixtures.map(f => ({
                 id: f.fixture.id, 
@@ -264,7 +263,7 @@ const CreateQuiniela = () => {
                 homeLogo: f.teams.home.logo, 
                 awayLogo: f.teams.away.logo,
                 matchDate: f.fixture.date,
-                result: null // Inicializamos el resultado vacío
+                result: null 
             })),
         };
 
@@ -286,7 +285,10 @@ const CreateQuiniela = () => {
 
     return (
         <DashboardLayout isAdmin={true}>
-            <div className="p-6 max-w-screen-xl mx-auto w-full"> 
+            {/* ... EL RESTO DEL JSX SIGUE IGUAL ... */}
+            {/* Para no alargar demasiado la respuesta, asumo que mantienes el JSX intacto 
+                ya que solo cambiamos la lógica de fetch arriba */}
+             <div className="p-6 max-w-screen-xl mx-auto w-full"> 
                 <h2 className="text-3xl font-bold text-red-700 mb-8 border-b pb-3">
                     ✍️ Crear Nueva Quiniela (Máx. {MAX_FIXTURES} Partidos)
                 </h2>
@@ -298,11 +300,7 @@ const CreateQuiniela = () => {
                 )}
 
                 <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-6">
-                    
-                    {/* COLUMNA IZQUIERDA: FORMULARIO */}
                     <div className="lg:w-2/3 space-y-8 bg-white p-6 rounded-xl shadow-lg h-fit"> 
-                        
-                        {/* 1. DATOS GENERALES */}
                         <section className="space-y-6 border-b pb-6 border-gray-200">
                             <h3 className="text-xl font-semibold text-gray-800">1. Datos Generales</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -340,7 +338,6 @@ const CreateQuiniela = () => {
                             </div>
                         </section>
 
-                        {/* 2. BUSCAR PARTIDOS */}
                         <section className="space-y-4 border-b pb-6 border-gray-200">
                             <h3 className="text-xl font-semibold text-gray-800">2. Selección de Partidos</h3>
                             <div className="grid grid-cols-3 gap-4">
@@ -376,7 +373,6 @@ const CreateQuiniela = () => {
                             {apiError && <p className="text-center text-red-500 text-sm font-bold mt-2">{apiError}</p>}
                         </section>
 
-                        {/* 3. PARTIDOS ENCONTRADOS */}
                         <section className="space-y-4">
                             <h3 className="text-xl font-semibold text-gray-800">3. Partidos Disponibles</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
@@ -425,7 +421,6 @@ const CreateQuiniela = () => {
                         </section>
                     </div>
 
-                    {/* COLUMNA DERECHA: RESUMEN Y ACCIÓN */}
                     <div className="lg:w-1/3 space-y-6">
                         <div className="sticky top-6 bg-slate-900 text-white p-6 rounded-xl shadow-2xl">
                             <div className="flex justify-between items-center border-b border-slate-700 pb-4 mb-4">
