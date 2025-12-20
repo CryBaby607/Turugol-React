@@ -81,20 +81,7 @@ const UserDashboardPage = () => {
             icon="fas fa-ticket-alt"
             trend="2 pendientes de resultado"
         />
-        <StatCard 
-            title="Puntos Totales" 
-            value={userData.points} 
-            color="yellow" 
-            icon="fas fa-star"
-            trend="+120 esta semana"
-        />
-        <StatCard 
-            title="Ranking Global" 
-            value={userData.ranking} 
-            color="blue" 
-            icon="fas fa-trophy"
-            trend="Subiste 5 puestos 🚀"
-        />
+
         {/* Nueva tarjeta de urgencia */}
         <StatCard 
             title="Próximo Cierre" 
@@ -137,17 +124,7 @@ const UserDashboardPage = () => {
         </div>
 
         {/* Columna Derecha: Anuncios / Promo */}
-        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-xl p-6 text-white shadow-md flex flex-col justify-between">
-            <div>
-                <h3 className="text-lg font-bold mb-2">🏆 Torneo Mensual</h3>
-                <p className="text-indigo-100 text-sm mb-4">
-                    ¡No olvides unirte a la Quiniela Especial de la Champions! Premios dobles esta semana.
-                </p>
-            </div>
-            <button className="w-full py-2 bg-white text-indigo-600 rounded-lg font-bold text-sm hover:bg-indigo-50 transition-colors">
-                Ver Detalles
-            </button>
-        </div>
+
 
       </div>
     </DashboardLayout>
