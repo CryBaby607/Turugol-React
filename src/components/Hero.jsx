@@ -1,39 +1,54 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import Carousel from './Carousel';
 
 const Hero = () => {
   return (
-    <section className="bg-black text-white">
-      <div className="container mx-auto px-4 hero-container flex items-center">
-        <div className="flex flex-col lg:flex-row items-stretch w-full">
-          {/* Columna izquierda: Descripción */}
-          <div className="lg:w-1/2 lg:pr-12 py-12 lg:py-24 flex flex-col justify-center">
-            <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6">
-              Demuestra que sabes de fútbol. <span className="text-amber-300">Compite en quinielas</span> con tus amigos.
-            </h1>
-            <p className="text-xl text-gray-300 mb-8">
-              Únete a la comunidad más grande de pronósticos deportivos y demuestra quién es el verdadero experto.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link 
-                to="/register" 
-                className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg text-center"
-              >
-                Comenzar ahora
-              </Link>
-              <Link 
-                to="#quinielas" 
-                className="bg-transparent border-2 border-white hover:bg-white/10 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 text-center"
-              >
-                Ver quinielas
-              </Link>
-            </div>
+    <section className="relative bg-zinc-950 text-white overflow-hidden min-h-[80vh] flex items-center justify-center">
+      {/* Capa de gradiente ambiental principal */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,_#064e3b_0%,_#09090b_80%)]"></div>
+      
+      {/* Textura sutil */}
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none"></div>
+      
+      {/* Luces decorativas de apoyo */}
+      <div className="absolute top-1/4 -left-20 w-80 h-80 bg-emerald-600/10 rounded-full blur-[100px] -z-10 animate-pulse"></div>
+      <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-emerald-900/20 rounded-full blur-[100px] -z-10"></div>
+
+      <div className="container mx-auto px-4 relative z-10 text-center">
+        <div className="max-w-4xl mx-auto">
+          {/* Badge superior */}
+          <div className="inline-block px-4 py-1.5 mb-8 border border-emerald-500/20 rounded-full bg-emerald-500/5 backdrop-blur-sm">
+            <span className="text-emerald-500 text-xs font-bold tracking-[0.2em] uppercase">La nueva era del pronóstico</span>
           </div>
           
-          {/* Columna derecha: Carrusel que ocupa todo el alto */}
-          <div className="lg:w-1/2 carousel-column relative">
-            <Carousel />
+          {/* Título Principal con gradiente suave */}
+          <h1 className="text-5xl md:text-7xl font-extrabold leading-tight mb-8 tracking-tight">
+            Demuestra que <br/>
+            <span className="text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-400">
+              sabes de fútbol
+            </span>
+          </h1>
+          
+          {/* Descripción con color Zinc suave */}
+          <p className="text-lg md:text-xl text-zinc-400 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
+            Compite en quinielas con tus amigos, crea tus propias ligas y demuestra quién es el verdadero experto en deportes.
+          </p>
+          
+          {/* Botones */}
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+            <Link 
+              to="/register" 
+              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white text-lg font-bold py-4 px-12 rounded-full transition-all duration-300 shadow-[0_10px_20px_rgba(5,150,105,0.2)] hover:shadow-[0_15px_30px_rgba(5,150,105,0.4)] hover:-translate-y-1 text-center"
+            >
+              Comenzar ahora
+            </Link>
+            <Link 
+              to="/login" 
+              className="group w-full sm:w-auto flex items-center justify-center gap-2 bg-zinc-900/50 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-lg font-semibold py-4 px-12 rounded-full transition-all duration-300 hover:-translate-y-1 backdrop-blur-sm"
+            >
+              <span>Ya tengo cuenta</span>
+              <i className="fas fa-arrow-right text-sm group-hover:translate-x-1 transition-transform"></i>
+            </Link>
           </div>
         </div>
       </div>
