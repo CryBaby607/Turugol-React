@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db, auth } from '../../firebase/config';
-import { doc, getDoc, addDoc, collection, query, where, getDocs } from 'firebase/firestore'; // 🔥 Imports actualizados
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore'; 
 import DashboardLayout from '../../components/DashboardLayout';
 
 const PlayQuiniela = () => {
@@ -40,10 +40,10 @@ const PlayQuiniela = () => {
                     return;
                 }
 
-                // 🔒 3. VALIDACIÓN DE PARTICIPACIÓN PREVIA (Evitar Doble Voto)
-                // Buscamos si existe un documento en 'participaciones' con este userId y quinielaId
+                // 🔒 3. VALIDACIÓN DE PARTICIPACIÓN PREVIA
+                // Usamos 'query' hacia 'userEntries' para ser compatible con las reglas de seguridad
                 const participationQuery = query(
-                    collection(db, 'participaciones'),
+                    collection(db, 'userEntries'),
                     where('userId', '==', user.uid),
                     where('quinielaId', '==', quinielaId)
                 );
@@ -51,7 +51,6 @@ const PlayQuiniela = () => {
                 const participationSnap = await getDocs(participationQuery);
 
                 if (!participationSnap.empty) {
-                    // Si ya existe un registro, redirigimos
                     alert("🚫 Ya has participado en esta quiniela. Puedes ver tu pronóstico en el historial.");
                     navigate('/dashboard/user/history');
                     return;
@@ -88,7 +87,6 @@ const PlayQuiniela = () => {
         }
 
         // 🔒 2. RE-VALIDACIÓN DE FECHA (Justo antes de guardar)
-        // Esto protege contra usuarios que dejan la ventana abierta horas
         const now = new Date();
         const deadline = new Date(quiniela.metadata.deadline);
         if (now > deadline) {
@@ -99,7 +97,11 @@ const PlayQuiniela = () => {
 
         setSubmitting(true);
         try {
-            await addDoc(collection(db, 'participaciones'), {
+            // Generamos el ID único compuesto
+            const entryId = `${auth.currentUser.uid}_${quiniela.id}`;
+
+            // Usamos setDoc en la colección 'userEntries'
+            await setDoc(doc(db, 'userEntries', entryId), {
                 userId: auth.currentUser.uid,
                 userEmail: auth.currentUser.email,
                 userName: auth.currentUser.displayName || 'Usuario',
@@ -111,13 +113,13 @@ const PlayQuiniela = () => {
                 puntos: 0
             });
             
-            // Éxito con feedback visual (Emoji opcional)
             alert("✅ ¡Pronóstico enviado con éxito! Buena suerte.");
             navigate('/dashboard/user/history');
             
         } catch (error) {
             console.error("Error al enviar:", error);
-            alert("Error al guardar tu quiniela. Intenta de nuevo.");
+            // Mensaje de error más descriptivo
+            alert(`Error al guardar: ${error.message}`);
         } finally {
             setSubmitting(false);
         }
@@ -170,7 +172,7 @@ const PlayQuiniela = () => {
                                     </div>
                                 </div>
 
-                                {/* Botones de Selección (Diseño de tarjetas seleccionables) */}
+                                {/* Botones de Selección */}
                                 <div className="flex w-full md:w-7/12 gap-2 bg-gray-50 p-1.5 rounded-xl">
                                     <button 
                                         onClick={() => handleSelect(fixture.id, 'HOME')}
