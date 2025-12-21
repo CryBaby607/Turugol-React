@@ -33,7 +33,7 @@ const CreateQuiniela = () => {
     const [isLoadingRounds, setIsLoadingRounds] = useState(false);
     
     const [apiFixtures, setApiFixtures] = useState([]); 
-    const [searchTerm, setSearchTerm] = useState(''); // Nuevo estado para búsqueda
+    const [searchTerm, setSearchTerm] = useState(''); 
     const [selectedFixtures, setSelectedFixtures] = useState([]); 
     
     const [isLoading, setIsLoading] = useState(false);
