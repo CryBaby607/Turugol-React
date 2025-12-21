@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase/config';
-import { collection, getDocs, query, where, doc, updateDoc } from 'firebase/firestore'; // 🔥 updateDoc agregado
+import { collection, getDocs, query, where, doc, updateDoc } from 'firebase/firestore'; 
 import DashboardLayout from '../../components/DashboardLayout';
 
 const UserManagement = () => {
@@ -8,7 +8,7 @@ const UserManagement = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [selectedUserHistory, setSelectedUserHistory] = useState(null);
-    const [updatingId, setUpdatingId] = useState(null); // Para mostrar loading en el botón específico
+    const [updatingId, setUpdatingId] = useState(null); // Estado para loading individual del botón
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -28,10 +28,11 @@ const UserManagement = () => {
         fetchUsers();
     }, []);
 
-    // 🔥 Nueva función para cambiar estado de pago
+    // 🔥 Función para cambiar el estado de pago (Requerimiento 3.3)
     const togglePaymentStatus = async (userId, currentStatus) => {
         setUpdatingId(userId);
         try {
+            // Si no tiene status, asumimos 'pending'. Si es 'paid', cambiamos a 'pending' y viceversa.
             const newStatus = currentStatus === 'paid' ? 'pending' : 'paid';
             const userRef = doc(db, 'users', userId);
             
@@ -40,21 +41,20 @@ const UserManagement = () => {
                 updatedAt: new Date().toISOString()
             });
 
-            // Actualizar estado local para reflejar el cambio sin recargar
+            // Actualizamos el estado local para ver el cambio reflejado inmediatamente
             setUsers(prevUsers => prevUsers.map(user => 
                 user.id === userId ? { ...user, paymentStatus: newStatus } : user
             ));
 
         } catch (error) {
             console.error("Error actualizando pago:", error);
-            alert("No se pudo actualizar el estado.");
+            alert("No se pudo actualizar el estado de pago.");
         } finally {
             setUpdatingId(null);
         }
     };
 
     const viewHistory = async (userId) => {
-        // (Lógica existente visualizando historial...)
         setLoading(true); 
         try {
             const q = query(collection(db, 'participaciones'), where('userId', '==', userId));
@@ -89,12 +89,14 @@ const UserManagement = () => {
         <DashboardLayout isAdmin={true}>
             <div className="max-w-7xl mx-auto p-4 lg:p-8">
                 
+                {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                     <div>
                         <h2 className="text-3xl font-bold text-gray-800">Directorio de Usuarios</h2>
-                        <p className="text-gray-500">Administra accesos, roles y <span className="text-blue-600 font-bold">pagos</span>.</p>
+                        <p className="text-gray-500">Administra accesos, roles y <span className="text-blue-600 font-bold">estado de pagos</span>.</p>
                     </div>
                     
+                    {/* Buscador */}
                     <div className="relative w-full md:w-96">
                         <input 
                             type="text" 
@@ -106,6 +108,7 @@ const UserManagement = () => {
                     </div>
                 </div>
 
+                {/* Tabla Maestra */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="min-w-full text-left">
@@ -141,31 +144,32 @@ const UserManagement = () => {
                                                     </div>
                                                 </td>
                                                 
-                                                {/* 🔥 Columna de Pago Interactiva */}
+                                                {/* 🔥 Botón de Toggle de Pago */}
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <button 
                                                         onClick={() => togglePaymentStatus(user.id, user.paymentStatus)}
                                                         disabled={updatingId === user.id}
                                                         className={`
-                                                            relative inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold transition-all
+                                                            relative inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm
                                                             ${isPaid 
                                                                 ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200' 
                                                                 : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200'}
                                                             ${updatingId === user.id ? 'opacity-50 cursor-wait' : ''}
                                                         `}
+                                                        title="Clic para cambiar estado"
                                                     >
                                                         {updatingId === user.id ? (
                                                             <i className="fas fa-circle-notch fa-spin mr-2"></i>
                                                         ) : (
                                                             <i className={`fas ${isPaid ? 'fa-check-circle' : 'fa-clock'} mr-2`}></i>
                                                         )}
-                                                        {isPaid ? 'MEMBRESÍA ACTIVA' : 'PAGO PENDIENTE'}
+                                                        {isPaid ? 'PAGADO' : 'PENDIENTE'}
                                                     </button>
                                                 </td>
 
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-md ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
-                                                        {user.role === 'admin' ? 'ADMIN' : 'USER'}
+                                                        {user.role === 'admin' ? 'ADMIN' : 'JUGADOR'}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
