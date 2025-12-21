@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // 🔥 Importamos el hook de navegación
+import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../firebase/config';
+// CAMBIO: Asegúrate de importar lo necesario. 
 import { collection, query, where, getDocs, orderBy, doc, getDoc } from 'firebase/firestore';
 import DashboardLayout from '../../components/DashboardLayout';
 
 const UserHistory = () => {
-    const navigate = useNavigate(); // 🔥 Inicializamos navegación
+    const navigate = useNavigate();
     const [participaciones, setParticipaciones] = useState([]);
     const [loading, setLoading] = useState(true);
     
@@ -20,8 +21,9 @@ const UserHistory = () => {
                 const user = auth.currentUser;
                 if (!user) return;
 
+                // 🔴 CORRECCIÓN AQUÍ: Cambiamos 'participaciones' por 'userEntries'
                 const q = query(
-                    collection(db, 'participaciones'), 
+                    collection(db, 'userEntries'), 
                     where('userId', '==', user.uid),
                     orderBy('submittedAt', 'desc')
                 );
@@ -111,7 +113,7 @@ const UserHistory = () => {
                                         <p className="text-2xl font-black text-gray-800">{part.puntos !== undefined ? part.puntos : '-'}</p>
                                     </div>
                                     
-                                    {/* 🔥 GRUPO DE BOTONES DE ACCIÓN */}
+                                    {/* Botones de acción */}
                                     <div className="flex gap-2">
                                         <button 
                                             onClick={() => navigate(`/dashboard/user/leaderboard/${part.quinielaId}`)}
