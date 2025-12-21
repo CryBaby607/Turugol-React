@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase/config';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, updateDoc } from 'firebase/firestore'; // 🔥 updateDoc agregado
 import DashboardLayout from '../../components/DashboardLayout';
 
 const UserManagement = () => {
@@ -8,6 +8,7 @@ const UserManagement = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [selectedUserHistory, setSelectedUserHistory] = useState(null);
+    const [updatingId, setUpdatingId] = useState(null); // Para mostrar loading en el botón específico
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -27,8 +28,34 @@ const UserManagement = () => {
         fetchUsers();
     }, []);
 
+    // 🔥 Nueva función para cambiar estado de pago
+    const togglePaymentStatus = async (userId, currentStatus) => {
+        setUpdatingId(userId);
+        try {
+            const newStatus = currentStatus === 'paid' ? 'pending' : 'paid';
+            const userRef = doc(db, 'users', userId);
+            
+            await updateDoc(userRef, { 
+                paymentStatus: newStatus,
+                updatedAt: new Date().toISOString()
+            });
+
+            // Actualizar estado local para reflejar el cambio sin recargar
+            setUsers(prevUsers => prevUsers.map(user => 
+                user.id === userId ? { ...user, paymentStatus: newStatus } : user
+            ));
+
+        } catch (error) {
+            console.error("Error actualizando pago:", error);
+            alert("No se pudo actualizar el estado.");
+        } finally {
+            setUpdatingId(null);
+        }
+    };
+
     const viewHistory = async (userId) => {
-        setLoading(true); // Pequeño loading visual global o podrías usar uno local
+        // (Lógica existente visualizando historial...)
+        setLoading(true); 
         try {
             const q = query(collection(db, 'participaciones'), where('userId', '==', userId));
             const snap = await getDocs(q);
@@ -41,7 +68,6 @@ const UserManagement = () => {
         }
     };
 
-    // Helper para generar avatar visual
     const getInitials = (name) => {
         if (!name) return '??';
         return name.substring(0, 2).toUpperCase();
@@ -63,14 +89,12 @@ const UserManagement = () => {
         <DashboardLayout isAdmin={true}>
             <div className="max-w-7xl mx-auto p-4 lg:p-8">
                 
-                {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                     <div>
                         <h2 className="text-3xl font-bold text-gray-800">Directorio de Usuarios</h2>
-                        <p className="text-gray-500">Administra los accesos y roles de la plataforma.</p>
+                        <p className="text-gray-500">Administra accesos, roles y <span className="text-blue-600 font-bold">pagos</span>.</p>
                     </div>
                     
-                    {/* Buscador Moderno */}
                     <div className="relative w-full md:w-96">
                         <input 
                             type="text" 
@@ -82,15 +106,14 @@ const UserManagement = () => {
                     </div>
                 </div>
 
-                {/* Tabla Maestra */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="min-w-full text-left">
                             <thead className="bg-gray-50 border-b border-gray-100">
                                 <tr>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Usuario</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Estado / Rol</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha Registro</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Estado de Pago</th> {/* 🔥 Nueva Columna */}
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Rol</th>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
                                 </tr>
                             </thead>
@@ -102,6 +125,8 @@ const UserManagement = () => {
                                 ) : (
                                     filteredUsers.map(user => {
                                         const name = user.displayName || 'Sin Nombre';
+                                        const isPaid = user.paymentStatus === 'paid';
+                                        
                                         return (
                                             <tr key={user.id} className="hover:bg-gray-50/50 transition-colors group">
                                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -115,21 +140,40 @@ const UserManagement = () => {
                                                         </div>
                                                     </div>
                                                 </td>
+                                                
+                                                {/* 🔥 Columna de Pago Interactiva */}
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}`}>
-                                                        {user.role === 'admin' ? 'Administrador' : 'Jugador'}
-                                                    </span>
+                                                    <button 
+                                                        onClick={() => togglePaymentStatus(user.id, user.paymentStatus)}
+                                                        disabled={updatingId === user.id}
+                                                        className={`
+                                                            relative inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold transition-all
+                                                            ${isPaid 
+                                                                ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200' 
+                                                                : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200'}
+                                                            ${updatingId === user.id ? 'opacity-50 cursor-wait' : ''}
+                                                        `}
+                                                    >
+                                                        {updatingId === user.id ? (
+                                                            <i className="fas fa-circle-notch fa-spin mr-2"></i>
+                                                        ) : (
+                                                            <i className={`fas ${isPaid ? 'fa-check-circle' : 'fa-clock'} mr-2`}></i>
+                                                        )}
+                                                        {isPaid ? 'MEMBRESÍA ACTIVA' : 'PAGO PENDIENTE'}
+                                                    </button>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {/* Si tienes fecha de registro en BD úsala, si no, placeholder */}
-                                                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'} 
+
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-md ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
+                                                        {user.role === 'admin' ? 'ADMIN' : 'USER'}
+                                                    </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                     <button 
                                                         onClick={() => viewHistory(user.id)}
-                                                        className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
+                                                        className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors font-bold text-xs"
                                                     >
-                                                        Historial
+                                                        Ver Historial
                                                     </button>
                                                 </td>
                                             </tr>
@@ -141,7 +185,7 @@ const UserManagement = () => {
                     </div>
                 </div>
 
-                {/* Modal de Historial (Diseño mejorado) */}
+                {/* Modal de Historial (Sin cambios mayores) */}
                 {selectedUserHistory && (
                     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                         <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl animate-fade-in">
@@ -151,8 +195,8 @@ const UserManagement = () => {
                                     selectedUserHistory.history.map((h, i) => (
                                         <div key={i} className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex justify-between items-center">
                                             <span className="font-bold text-gray-700">{h.quinielaName || 'Quiniela #' + (i+1)}</span>
-                                            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-xs font-bold">
-                                                {h.puntos || 0} pts
+                                            <span className={`px-2 py-1 rounded-md text-xs font-bold ${h.status === 'finalized' ? 'bg-green-100 text-green-700' : 'bg-yellow-50 text-yellow-700'}`}>
+                                                {h.status === 'finalized' ? `${h.puntos} pts` : 'Pendiente'}
                                             </span>
                                         </div>
                                     ))
