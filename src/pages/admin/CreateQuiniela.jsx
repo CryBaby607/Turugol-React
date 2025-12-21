@@ -8,15 +8,28 @@ const QUINIELA_BORRADORES_COLLECTION = "quinielaBorradores";
 const QUINIELAS_FINAL_COLLECTION = "quinielas";
 
 const SEASON_YEAR = 2025; 
-const MAX_FIXTURES = 9;
+const MAX_FIXTURES = 2;
 const MAX_DESCRIPTION_CHARS = 200;
 
-// Agregamos logos para mejorar la UI
 const DUMMY_LEAGUES = [
-    { id: 140, name: 'LaLiga', nameShort: 'LALIGA', logo: 'https://media.api-sports.io/football/leagues/140.png' },
+    // --- TORNEOS INTERNACIONALES ---
+    { id: 2, name: 'UEFA Champions League', nameShort: 'CHAMPIONS', logo: 'https://media.api-sports.io/football/leagues/2.png' },
+    { id: 13, name: 'Copa Libertadores', nameShort: 'LIBERTADORES', logo: 'https://media.api-sports.io/football/leagues/13.png' },
+    
+    // --- EUROPA (TOP 5) ---
     { id: 39, name: 'Premier League', nameShort: 'PREMIER', logo: 'https://media.api-sports.io/football/leagues/39.png' },
+    { id: 140, name: 'LaLiga', nameShort: 'LALIGA', logo: 'https://media.api-sports.io/football/leagues/140.png' },
+    { id: 135, name: 'Serie A', nameShort: 'SERIE A', logo: 'https://media.api-sports.io/football/leagues/135.png' },
+    { id: 78, name: 'Bundesliga', nameShort: 'BUNDESLIGA', logo: 'https://media.api-sports.io/football/leagues/78.png' },
+    { id: 61, name: 'Ligue 1', nameShort: 'LIGUE 1', logo: 'https://media.api-sports.io/football/leagues/61.png' },
+    
+    // --- AMÉRICA ---
     { id: 262, name: 'Liga MX', nameShort: 'LIGA MX', logo: 'https://media.api-sports.io/football/leagues/262.png' },
+    { id: 253, name: 'Major League Soccer', nameShort: 'MLS', logo: 'https://media.api-sports.io/football/leagues/253.png' },
+    { id: 128, name: 'Liga Profesional Argentina', nameShort: 'ARGENTINA', logo: 'https://media.api-sports.io/football/leagues/128.png' },
+    { id: 71, name: 'Brasileirão Série A', nameShort: 'BRASIL', logo: 'https://media.api-sports.io/football/leagues/71.png' },
 ];
+
 
 const CreateQuiniela = () => {
     const user = auth.currentUser; 
