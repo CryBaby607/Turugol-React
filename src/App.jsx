@@ -7,9 +7,10 @@ import RegisterPage from './pages/Register';
 // Usuario
 import UserDashboardPage from './pages/user/Dashboard'; 
 import AvailableQuinielas from './pages/user/AvailableQuinielas';
-import PlayQuiniela from './pages/user/PlayQuiniela'; // 🔥 NUEVO
-import UserHistory from './pages/user/UserHistory';   // 🔥 NUEVO
-import UserProfile from './pages/user/UserProfile';   // 🔥 NUEVO
+import PlayQuiniela from './pages/user/PlayQuiniela'; 
+import UserHistory from './pages/user/UserHistory';   
+import UserProfile from './pages/user/UserProfile';   
+import Leaderboard from './pages/user/Leaderboard'; // 🔥 NUEVO IMPORT
 
 // Admin
 import AdminDashboardPage from './pages/admin/Dashboard';
@@ -35,6 +36,9 @@ function App() {
                     <Route path="/dashboard/user/play/:quinielaId" element={<PlayQuiniela />} />
                     <Route path="/dashboard/user/history" element={<UserHistory />} />
                     <Route path="/dashboard/user/profile" element={<UserProfile />} />
+                    
+                    {/* 🔥 NUEVA RUTA REGISTRADA */}
+                    <Route path="/dashboard/user/leaderboard/:quinielaId" element={<Leaderboard />} />
                 </Route>
 
                 {/* 3. RUTAS DE ADMIN (Role: admin) */}
