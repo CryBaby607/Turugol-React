@@ -60,6 +60,21 @@ const AdminDashboardPage = () => {
         fetchDashboardData();
     }, []);
 
+    // Funciones para compartir
+    const handleShareWhatsApp = (quiniela) => {
+        const link = `${window.location.origin}/dashboard/user/play/${quiniela.id}`;
+        const message = `¡Hola! Te invito a participar en la quiniela "${quiniela.metadata.title}". ⚽🏆\n\nIngresa tus pronósticos aquí: ${link}`;
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
+    };
+
+    const handleCopyLink = (id) => {
+        const link = `${window.location.origin}/dashboard/user/play/${id}`;
+        navigator.clipboard.writeText(link)
+            .then(() => alert('¡Enlace copiado al portapapeles!'))
+            .catch(err => console.error('Error al copiar:', err));
+    };
+
     // Componente auxiliar corregido para eliminar el subrayado (background) del texto
     const StatCard = ({ title, value, icon, color, subtext }) => {
         // Extraemos solo la clase de texto (ej: "text-green-600") para el subtext
@@ -138,13 +153,14 @@ const AdminDashboardPage = () => {
                                         <th className="px-6 py-3">Título</th>
                                         <th className="px-6 py-3">Estado</th>
                                         <th className="px-6 py-3">Fecha Cierre</th>
+                                        <th className="px-6 py-3 text-center">Compartir</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {loading ? (
-                                        <tr><td colSpan="3" className="p-4 text-center text-gray-400">Cargando datos...</td></tr>
+                                        <tr><td colSpan="4" className="p-4 text-center text-gray-400">Cargando datos...</td></tr>
                                     ) : recentQuinielas.length === 0 ? (
-                                        <tr><td colSpan="3" className="p-4 text-center text-gray-400">No hay quinielas creadas.</td></tr>
+                                        <tr><td colSpan="4" className="p-4 text-center text-gray-400">No hay quinielas creadas.</td></tr>
                                     ) : (
                                         recentQuinielas.map(quiniela => {
                                             const isOpen = new Date() < new Date(quiniela.metadata.deadline);
@@ -160,6 +176,22 @@ const AdminDashboardPage = () => {
                                                     </td>
                                                     <td className="px-6 py-4 text-gray-500">
                                                         {new Date(quiniela.metadata.deadline).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="px-6 py-4 flex justify-center gap-2">
+                                                        <button 
+                                                            onClick={() => handleShareWhatsApp(quiniela)}
+                                                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                            title="Compartir por WhatsApp"
+                                                        >
+                                                            <i className="fab fa-whatsapp text-lg"></i>
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleCopyLink(quiniela.id)}
+                                                            className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                                                            title="Copiar enlace"
+                                                        >
+                                                            <i className="fas fa-link text-lg"></i>
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             );
