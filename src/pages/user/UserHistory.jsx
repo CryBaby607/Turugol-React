@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../firebase/config';
-// CAMBIO: Asegúrate de importar lo necesario. 
 import { collection, query, where, getDocs, orderBy, doc, getDoc } from 'firebase/firestore';
 import DashboardLayout from '../../components/DashboardLayout';
 
@@ -21,7 +20,6 @@ const UserHistory = () => {
                 const user = auth.currentUser;
                 if (!user) return;
 
-                // 🔴 CORRECCIÓN AQUÍ: Cambiamos 'participaciones' por 'userEntries'
                 const q = query(
                     collection(db, 'userEntries'), 
                     where('userId', '==', user.uid),

@@ -8,7 +8,7 @@ const UserProfile = () => {
     const user = auth.currentUser;
     const [isEditing, setIsEditing] = useState(false);
     const [displayName, setDisplayName] = useState(user?.displayName || '');
-    const [paymentStatus, setPaymentStatus] = useState('loading'); // 'loading', 'paid', 'pending'
+    const [paymentStatus, setPaymentStatus] = useState('loading');
     const [saving, setSaving] = useState(false);
 
     // Cargar datos extendidos desde Firestore (Status de Pago)
