@@ -4,9 +4,8 @@ import DashboardLayout from '../../components/DashboardLayout';
 import { db } from '../../firebase/config';
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 
-// 1. Definimos StatCard FUERA del componente principal para evitar errores de renderizado
 const StatCard = ({ title, value, icon, color, subtext, loading }) => {
-    // Protección: si color no viene, usar un default
+
     const safeColor = color || "text-gray-500 bg-gray-500";
     const textColorClass = safeColor.split(' ').find(cls => cls.startsWith('text-')) || "text-gray-500";
 
@@ -55,7 +54,7 @@ const AdminDashboardPage = () => {
                 }));
 
                 const now = new Date();
-                // Protección: verificamos que metadata y deadline existan
+                
                 const active = quinielasData.filter(q => 
                     q.metadata?.deadline && new Date(q.metadata.deadline) > now
                 );
@@ -85,7 +84,7 @@ const AdminDashboardPage = () => {
     }, []);
 
     const handleShareWhatsApp = (quiniela) => {
-        // Usamos window.location.origin para obtener el dominio actual (localhost o producción)
+        
         const link = `${window.location.origin}/dashboard/user/play/${quiniela.id}`;
         const message = `¡Hola! Te invito a participar en la quiniela "${quiniela.metadata?.title || 'TuruGol'}". ⚽🏆\n\nIngresa tus pronósticos aquí: ${link}`;
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
@@ -220,7 +219,7 @@ const AdminDashboardPage = () => {
                                 </div>
                             </Link>
                             {/* ... Resto de botones igual ... */}
-                             <Link to="/dashboard/admin/manage" className="block w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-purple-50 hover:border-purple-200 transition-all group">
+                            <Link to="/dashboard/admin/manage" className="block w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-purple-50 hover:border-purple-200 transition-all group">
                                 <div className="flex items-center">
                                     <div className="bg-purple-100 text-purple-600 p-2 rounded-md mr-3 group-hover:bg-purple-200 transition-colors">
                                         <i className="fas fa-edit"></i>

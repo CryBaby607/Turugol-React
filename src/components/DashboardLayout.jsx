@@ -9,7 +9,7 @@ const Sidebar = ({ isAdmin, isOpen, toggleSidebar }) => {
     
     const links = isAdmin
         ? [
-              { path: '/dashboard/admin', name: 'Resumen Admin', icon: 'fas fa-chart-line' },
+              { path: '/dashboard/admin', name: 'Inicio', icon: 'fas fa-chart-line' },
               { path: '/dashboard/admin/create', name: 'Crear Quiniela', icon: 'fas fa-plus-circle' },
               { path: '/dashboard/admin/manage', name: 'Gestionar Quinielas', icon: 'fas fa-clipboard-list' },
               { path: '/dashboard/admin/users', name: 'Gestionar Usuarios', icon: 'fas fa-users' }, 
