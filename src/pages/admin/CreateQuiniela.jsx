@@ -8,7 +8,7 @@ const QUINIELA_BORRADORES_COLLECTION = "quinielaBorradores";
 const QUINIELAS_FINAL_COLLECTION = "quinielas";
 
 const SEASON_YEAR = 2025; 
-const MAX_FIXTURES = 2;
+const MAX_FIXTURES = 1;
 const MAX_DESCRIPTION_CHARS = 200;
 
 const DUMMY_LEAGUES = [
@@ -90,7 +90,7 @@ const CreateQuiniela = () => {
             const earliestMatchTimestamp = Math.min(
                 ...selectedFixtures.map(f => new Date(f.fixture.date).getTime())
             );
-            const oneHourBefore = new Date(earliestMatchTimestamp - 3600000);
+            const oneHourBefore = new Date(earliestMatchTimestamp - 300000);
             const tzOffset = oneHourBefore.getTimezoneOffset() * 60000;
             const localISOTime = new Date(oneHourBefore.getTime() - tzOffset).toISOString().slice(0, 16);
             setDeadline(localISOTime);

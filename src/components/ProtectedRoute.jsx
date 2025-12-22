@@ -1,29 +1,26 @@
 import React from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom'; // 1. Importar useLocation
-import { useAuthStatusAndRole } from '../hooks/useAuthStatusAndRole';
+import { Navigate, Outlet, useLocation } from 'react-router-dom'; 
+import useAuthStatusAndRole from '../hooks/useAuthStatusAndRole';
 
 const ProtectedRoute = ({ requiredRole }) => {
-    const { loggedIn, checkingStatus, role } = useAuthStatusAndRole();
-    const location = useLocation(); // 2. Obtener la ubicación actual
+    const { user, authReady, role, loadingRole } = useAuthStatusAndRole();
+    const location = useLocation(); 
 
-    if (checkingStatus) {
+    if (!authReady || loadingRole) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-50">
-                <div className="text-center">
-                    <i className="fas fa-circle-notch fa-spin text-blue-600 text-3xl mb-3"></i>
-                    <p className="text-gray-500 font-medium">Verificando sesión...</p>
-                </div>
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
             </div>
         );
     }
 
-    if (!loggedIn) {
-        // 3. Pasar la ubicación en el "state" para recordarla
+    if (!user) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
     if (requiredRole && role !== requiredRole) {
-        return <Navigate to="/" />;
+        console.warn(`Acceso denegado. Rol requerido: ${requiredRole}, Rol actual: ${role}`);
+        return <Navigate to="/" replace />;
     }
 
     return <Outlet />;

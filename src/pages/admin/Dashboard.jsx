@@ -4,8 +4,31 @@ import DashboardLayout from '../../components/DashboardLayout';
 import { db } from '../../firebase/config';
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 
+// 1. Definimos StatCard FUERA del componente principal para evitar errores de renderizado
+const StatCard = ({ title, value, icon, color, subtext, loading }) => {
+    // Protección: si color no viene, usar un default
+    const safeColor = color || "text-gray-500 bg-gray-500";
+    const textColorClass = safeColor.split(' ').find(cls => cls.startsWith('text-')) || "text-gray-500";
+
+    return (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition-shadow">
+            <div>
+                <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
+                <h3 className="text-3xl font-bold text-gray-800">{loading ? '-' : value}</h3>
+                {subtext && (
+                    <p className={`text-xs mt-2 font-semibold ${textColorClass}`}>
+                        {subtext}
+                    </p>
+                )}
+            </div>
+            <div className={`p-3 rounded-lg ${safeColor} bg-opacity-10 text-xl`}>
+                <i className={icon}></i>
+            </div>
+        </div>
+    );
+};
+
 const AdminDashboardPage = () => {
-    // Estados para las métricas
     const [stats, setStats] = useState({
         totalUsers: 0,
         activeQuinielas: 0,
@@ -17,11 +40,9 @@ const AdminDashboardPage = () => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                // 1. Obtener conteo de usuarios 
                 const usersSnap = await getDocs(collection(db, 'users'));
                 const totalUsers = usersSnap.size;
 
-                // 2. Obtener quinielas recientes
                 const qQuinielas = query(
                     collection(db, 'quinielas'), 
                     orderBy('metadata.createdAt', 'desc'), 
@@ -34,7 +55,10 @@ const AdminDashboardPage = () => {
                 }));
 
                 const now = new Date();
-                const active = quinielasData.filter(q => new Date(q.metadata.deadline) > now);
+                // Protección: verificamos que metadata y deadline existan
+                const active = quinielasData.filter(q => 
+                    q.metadata?.deadline && new Date(q.metadata.deadline) > now
+                );
                 
                 const deadlines = active
                     .map(q => new Date(q.metadata.deadline))
@@ -60,10 +84,10 @@ const AdminDashboardPage = () => {
         fetchDashboardData();
     }, []);
 
-    // Funciones para compartir
     const handleShareWhatsApp = (quiniela) => {
+        // Usamos window.location.origin para obtener el dominio actual (localhost o producción)
         const link = `${window.location.origin}/dashboard/user/play/${quiniela.id}`;
-        const message = `¡Hola! Te invito a participar en la quiniela "${quiniela.metadata.title}". ⚽🏆\n\nIngresa tus pronósticos aquí: ${link}`;
+        const message = `¡Hola! Te invito a participar en la quiniela "${quiniela.metadata?.title || 'TuruGol'}". ⚽🏆\n\nIngresa tus pronósticos aquí: ${link}`;
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
     };
@@ -73,30 +97,6 @@ const AdminDashboardPage = () => {
         navigator.clipboard.writeText(link)
             .then(() => alert('¡Enlace copiado al portapapeles!'))
             .catch(err => console.error('Error al copiar:', err));
-    };
-
-    // Componente auxiliar corregido para eliminar el subrayado (background) del texto
-    const StatCard = ({ title, value, icon, color, subtext }) => {
-        // Extraemos solo la clase de texto (ej: "text-green-600") para el subtext
-        const textColorClass = color.split(' ').find(cls => cls.startsWith('text-'));
-
-        return (
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition-shadow">
-                <div>
-                    <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-                    <h3 className="text-3xl font-bold text-gray-800">{loading ? '-' : value}</h3>
-                    {subtext && (
-                        <p className={`text-xs mt-2 font-semibold ${textColorClass}`}>
-                            {subtext}
-                        </p>
-                    )}
-                </div>
-                {/* El color de fondo (bg-...) se aplica solo aquí con opacidad suave */}
-                <div className={`p-3 rounded-lg ${color} bg-opacity-10 text-xl`}>
-                    <i className={icon}></i>
-                </div>
-            </div>
-        );
     };
 
     return (
@@ -115,7 +115,6 @@ const AdminDashboardPage = () => {
                     </div>
                 </div>
 
-                {/* Grid de KPIs con clases de color limpias */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <StatCard 
                         title="Quinielas Activas"
@@ -123,6 +122,7 @@ const AdminDashboardPage = () => {
                         icon="fas fa-clock"
                         color="text-green-600 bg-green-600"
                         subtext="Disponibles para jugar"
+                        loading={loading}
                     />
                     <StatCard 
                         title="Usuarios Registrados"
@@ -130,6 +130,7 @@ const AdminDashboardPage = () => {
                         icon="fas fa-users"
                         color="text-blue-600 bg-blue-600"
                         subtext="Comunidad total"
+                        loading={loading}
                     />
                     <StatCard 
                         title="Próximo Cierre"
@@ -137,6 +138,7 @@ const AdminDashboardPage = () => {
                         icon="fas fa-calendar-day"
                         color="text-orange-600 bg-orange-600"
                         subtext={stats.nextDeadline ? stats.nextDeadline.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Sin pendientes'}
+                        loading={loading}
                     />
                 </div>
 
@@ -163,11 +165,12 @@ const AdminDashboardPage = () => {
                                         <tr><td colSpan="4" className="p-4 text-center text-gray-400">No hay quinielas creadas.</td></tr>
                                     ) : (
                                         recentQuinielas.map(quiniela => {
-                                            const isOpen = new Date() < new Date(quiniela.metadata.deadline);
+                                            const deadline = quiniela.metadata?.deadline ? new Date(quiniela.metadata.deadline) : new Date();
+                                            const isOpen = new Date() < deadline;
                                             return (
                                                 <tr key={quiniela.id} className="hover:bg-gray-50 transition-colors">
                                                     <td className="px-6 py-4 font-medium text-gray-900 truncate max-w-xs">
-                                                        {quiniela.metadata.title}
+                                                        {quiniela.metadata?.title || "Sin título"}
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${isOpen ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -175,7 +178,7 @@ const AdminDashboardPage = () => {
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 text-gray-500">
-                                                        {new Date(quiniela.metadata.deadline).toLocaleDateString()}
+                                                        {deadline.toLocaleDateString()}
                                                     </td>
                                                     <td className="px-6 py-4 flex justify-center gap-2">
                                                         <button 
@@ -216,8 +219,8 @@ const AdminDashboardPage = () => {
                                     </div>
                                 </div>
                             </Link>
-
-                            <Link to="/dashboard/admin/manage" className="block w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-purple-50 hover:border-purple-200 transition-all group">
+                            {/* ... Resto de botones igual ... */}
+                             <Link to="/dashboard/admin/manage" className="block w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-purple-50 hover:border-purple-200 transition-all group">
                                 <div className="flex items-center">
                                     <div className="bg-purple-100 text-purple-600 p-2 rounded-md mr-3 group-hover:bg-purple-200 transition-colors">
                                         <i className="fas fa-edit"></i>
