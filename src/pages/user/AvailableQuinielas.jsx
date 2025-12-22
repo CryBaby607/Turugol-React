@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase/config';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { Link } from 'react-router-dom'; // Importamos Link para navegar
+import { Link } from 'react-router-dom'; 
 import DashboardLayout from '../../components/DashboardLayout';
-
-// Nota: Asumo que QuinielaPlayCard lo adaptaremos o usaremos este diseño inline por ahora
-// para asegurar que se vea bien el cambio.
 
 const AvailableQuinielas = () => {
     const [quinielas, setQuinielas] = useState([]);

@@ -60,7 +60,8 @@ const UserDashboardPage = () => {
 
         try {
             // 1. Obtener Participaciones del Usuario
-            const partRef = collection(db, 'participaciones');
+            // CORRECCIÓN: Usar 'userEntries' en lugar de 'participaciones'
+            const partRef = collection(db, 'userEntries');
             const q = query(partRef, where('userId', '==', user.uid), orderBy('submittedAt', 'desc'));
             const partSnap = await getDocs(q);
             

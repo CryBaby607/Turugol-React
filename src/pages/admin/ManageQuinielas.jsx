@@ -140,7 +140,8 @@ const ManageQuinielas = () => {
 
             // 2. Calcular Puntos de Usuarios
             setStatusMessage("Obteniendo participaciones...");
-            const q = query(collection(db, 'participaciones'), where('quinielaId', '==', selectedQuiniela.id));
+            // CORRECCIÓN: Usar 'userEntries' en lugar de 'participaciones'
+            const q = query(collection(db, 'userEntries'), where('quinielaId', '==', selectedQuiniela.id));
             const participationsSnapshot = await getDocs(q);
 
             if (participationsSnapshot.empty) {
@@ -174,7 +175,8 @@ const ManageQuinielas = () => {
                 }
 
                 // Preparamos la actualización
-                const participationRef = doc(db, 'participaciones', participationDoc.id);
+                // CORRECCIÓN: Usar 'userEntries' en lugar de 'participaciones'
+                const participationRef = doc(db, 'userEntries', participationDoc.id);
                 batch.update(participationRef, { 
                     puntos: userPoints,
                     status: 'finalized', // Marcamos como finalizada
