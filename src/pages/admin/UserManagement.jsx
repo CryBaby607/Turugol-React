@@ -57,7 +57,8 @@ const UserManagement = () => {
     const viewHistory = async (userId) => {
         setLoading(true); 
         try {
-            const q = query(collection(db, 'participaciones'), where('userId', '==', userId));
+            // ✅ CORREGIDO: Usamos 'userEntries' para obtener el historial real
+            const q = query(collection(db, 'userEntries'), where('userId', '==', userId));
             const snap = await getDocs(q);
             const history = snap.docs.map(doc => doc.data());
             setSelectedUserHistory({ userId, history });
@@ -115,7 +116,7 @@ const UserManagement = () => {
                             <thead className="bg-gray-50 border-b border-gray-100">
                                 <tr>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Usuario</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Estado de Pago</th> {/* 🔥 Nueva Columna */}
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Estado de Pago</th>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Rol</th>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
                                 </tr>
@@ -189,7 +190,7 @@ const UserManagement = () => {
                     </div>
                 </div>
 
-                {/* Modal de Historial (Sin cambios mayores) */}
+                {/* Modal de Historial */}
                 {selectedUserHistory && (
                     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                         <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl animate-fade-in">
