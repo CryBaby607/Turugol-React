@@ -22,7 +22,7 @@ const UserHistory = () => {
                 const q = query(
                     collection(db, 'userEntries'), 
                     where('userId', '==', user.uid),
-                    orderBy('submittedAt', 'desc')
+                    orderBy('createdAt', 'desc')
                 );
                 
                 // Nota: Si 'submittedAt' no existe en tus docs antiguos, usa 'createdAt'
