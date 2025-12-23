@@ -25,8 +25,15 @@ const UserHistory = () => {
                     orderBy('submittedAt', 'desc')
                 );
                 
-                const querySnapshot = await getDocs(q);
+                // Nota: Si 'submittedAt' no existe en tus docs antiguos, usa 'createdAt'
+                // O asegúrate de que PlayQuiniela guarde submittedAt.
+                // Si da error de index, ordena en cliente:
+                const querySnapshot = await getDocs(query(collection(db, 'userEntries'), where('userId', '==', user.uid)));
                 const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Ordenamiento manual por fecha (más seguro sin index compuesto)
+                data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                
                 setParticipaciones(data);
             } catch (error) {
                 console.error("Error cargando historial:", error);
@@ -95,13 +102,21 @@ const UserHistory = () => {
                                 <div className="bg-blue-50 text-blue-600 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm">
                                     Q
                                 </div>
-                                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${part.status === 'finalized' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-yellow-50 text-yellow-700 border-yellow-100'}`}>
-                                    {part.status === 'finalized' ? 'CALIFICADA' : 'PENDIENTE'}
-                                </span>
+                                <div className="flex flex-col items-end gap-1">
+                                    {/* Insignia Estado Juego */}
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${part.status === 'finalized' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-50 text-gray-600 border-gray-100'}`}>
+                                        {part.status === 'finalized' ? 'FINALIZADA' : 'EN JUEGO'}
+                                    </span>
+                                    
+                                    {/* Insignia Estado PAGO */}
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${part.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-orange-50 text-orange-700 border-orange-200'}`}>
+                                        {part.paymentStatus === 'paid' ? 'PAGADO $$' : 'PAGO PENDIENTE'}
+                                    </span>
+                                </div>
                             </div>
                             
                             <h3 className="font-bold text-lg text-gray-800 mb-1 truncate">{part.quinielaName}</h3>
-                            <p className="text-xs text-gray-400 mb-6">Enviado: {new Date(part.submittedAt).toLocaleDateString()}</p>
+                            <p className="text-xs text-gray-400 mb-6">Enviado: {new Date(part.createdAt).toLocaleDateString()}</p>
                             
                             <div className="flex justify-between items-end">
                                 <div className="text-center">

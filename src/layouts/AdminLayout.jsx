@@ -13,9 +13,9 @@ const AdminLayout = () => {
     const links = [
         { path: '/dashboard/admin', name: 'Panel de Control', icon: 'fas fa-th-large' },
         { path: '/dashboard/admin/create', name: 'Nueva Quiniela', icon: 'fas fa-plus-circle' },
-        { path: '/dashboard/admin/manage', name: 'Gestionar Quinielas', icon: 'fas fa-trophy' },
-        { path: '/dashboard/admin/users', name: 'Usuarios y Pagos', icon: 'fas fa-users' },
-        { path: '/dashboard/admin/settings', name: 'Configuración', icon: 'fas fa-cog' },
+        { path: '/dashboard/admin/quinielas', name: 'Gestionar Quinielas', icon: 'fas fa-trophy' },
+        { path: '/dashboard/admin/users', name: 'Usuarios', icon: 'fas fa-users' },
+    
     ];
 
     const handleLogout = async () => {

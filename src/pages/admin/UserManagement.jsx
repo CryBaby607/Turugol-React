@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase/config';
-import { collection, getDocs, query, where, doc, updateDoc } from 'firebase/firestore'; 
+import { collection, getDocs, query, where } from 'firebase/firestore'; 
 
 const UserManagement = () => {
     const [users, setUsers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [selectedUserHistory, setSelectedUserHistory] = useState(null);
-    const [updatingId, setUpdatingId] = useState(null);
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -26,29 +25,6 @@ const UserManagement = () => {
         };
         fetchUsers();
     }, []);
-
-    const togglePaymentStatus = async (userId, currentStatus) => {
-        setUpdatingId(userId);
-        try {
-            const newStatus = currentStatus === 'paid' ? 'pending' : 'paid';
-            const userRef = doc(db, 'users', userId);
-            
-            await updateDoc(userRef, { 
-                paymentStatus: newStatus,
-                updatedAt: new Date().toISOString()
-            });
-
-            setUsers(prevUsers => prevUsers.map(user => 
-                user.id === userId ? { ...user, paymentStatus: newStatus } : user
-            ));
-
-        } catch (error) {
-            console.error("Error actualizando pago:", error);
-            alert("No se pudo actualizar el estado de pago.");
-        } finally {
-            setUpdatingId(null);
-        }
-    };
 
     const viewHistory = async (userId) => {
         setLoading(true); 
@@ -87,7 +63,7 @@ const UserManagement = () => {
             <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                 <div>
                     <h2 className="text-3xl font-bold text-gray-800">Directorio de Usuarios</h2>
-                    <p className="text-gray-500">Administra accesos, roles y <span className="text-blue-600 font-bold">estado de pagos</span>.</p>
+                    <p className="text-gray-500">Administra el acceso y roles de los usuarios registrados.</p>
                 </div>
                 
                 <div className="relative w-full md:w-96">
@@ -107,20 +83,18 @@ const UserManagement = () => {
                         <thead className="bg-gray-50 border-b border-gray-100">
                             <tr>
                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Usuario</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Estado de Pago</th>
                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Rol</th>
                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {loading ? (
-                                <tr><td colSpan="4" className="p-8 text-center text-gray-400">Cargando usuarios...</td></tr>
+                                <tr><td colSpan="3" className="p-8 text-center text-gray-400">Cargando usuarios...</td></tr>
                             ) : filteredUsers.length === 0 ? (
-                                <tr><td colSpan="4" className="p-8 text-center text-gray-400">No se encontraron usuarios.</td></tr>
+                                <tr><td colSpan="3" className="p-8 text-center text-gray-400">No se encontraron usuarios.</td></tr>
                             ) : (
                                 filteredUsers.map(user => {
                                     const name = user.displayName || 'Sin Nombre';
-                                    const isPaid = user.paymentStatus === 'paid';
                                     
                                     return (
                                         <tr key={user.id} className="hover:bg-gray-50/50 transition-colors group">
@@ -136,28 +110,6 @@ const UserManagement = () => {
                                                 </div>
                                             </td>
                                             
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <button 
-                                                    onClick={() => togglePaymentStatus(user.id, user.paymentStatus)}
-                                                    disabled={updatingId === user.id}
-                                                    className={`
-                                                        relative inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm
-                                                        ${isPaid 
-                                                            ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200' 
-                                                            : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200'}
-                                                        ${updatingId === user.id ? 'opacity-50 cursor-wait' : ''}
-                                                    `}
-                                                    title="Clic para cambiar estado"
-                                                >
-                                                    {updatingId === user.id ? (
-                                                        <i className="fas fa-circle-notch fa-spin mr-2"></i>
-                                                    ) : (
-                                                        <i className={`fas ${isPaid ? 'fa-check-circle' : 'fa-clock'} mr-2`}></i>
-                                                    )}
-                                                    {isPaid ? 'PAGADO' : 'PENDIENTE'}
-                                                </button>
-                                            </td>
-
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-md ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
                                                     {user.role === 'admin' ? 'ADMIN' : 'JUGADOR'}
@@ -189,9 +141,11 @@ const UserManagement = () => {
                                 selectedUserHistory.history.map((h, i) => (
                                     <div key={i} className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex justify-between items-center">
                                         <span className="font-bold text-gray-700">{h.quinielaName || 'Quiniela #' + (i+1)}</span>
-                                        <span className={`px-2 py-1 rounded-md text-xs font-bold ${h.status === 'finalized' ? 'bg-green-100 text-green-700' : 'bg-yellow-50 text-yellow-700'}`}>
-                                            {h.status === 'finalized' ? `${h.puntos} pts` : 'Pendiente'}
-                                        </span>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <span className={`px-2 py-1 rounded-md text-xs font-bold ${h.status === 'finalized' ? 'bg-green-100 text-green-700' : 'bg-yellow-50 text-yellow-700'}`}>
+                                                {h.status === 'finalized' ? `${h.puntos} pts` : 'En Juego'}
+                                            </span>
+                                        </div>
                                     </div>
                                 ))
                             ) : (
