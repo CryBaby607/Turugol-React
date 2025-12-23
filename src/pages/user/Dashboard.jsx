@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import DashboardLayout from '../../components/DashboardLayout';
 import { auth, db } from '../../firebase/config';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 
@@ -60,7 +59,6 @@ const UserDashboardPage = () => {
 
         try {
             // 1. Obtener Participaciones del Usuario
-            // CORRECCIÓN: Usar 'userEntries' en lugar de 'participaciones'
             const partRef = collection(db, 'userEntries');
             const q = query(partRef, where('userId', '==', user.uid), orderBy('submittedAt', 'desc'));
             const partSnap = await getDocs(q);
@@ -71,24 +69,20 @@ const UserDashboardPage = () => {
 
             partSnap.forEach(doc => {
                 const data = doc.data();
-                // Sumar puntos
                 points += (data.puntos || 0);
                 
-                // Contar activas (no finalizadas)
                 if (data.status !== 'finalized') {
                     activeCount++;
                 }
 
-                // Guardar para historial reciente (max 3)
                 if (history.length < 3) {
                     history.push({ id: doc.id, ...data });
                 }
             });
 
-            // 2. Obtener Próximo Cierre (de quinielas disponibles)
+            // 2. Obtener Próximo Cierre
             const quinielasRef = collection(db, 'quinielas');
             const nowStr = new Date().toISOString();
-            // Traemos las quinielas cuya fecha limite sea mayor a hoy
             const qDeadline = query(quinielasRef, where('metadata.deadline', '>', nowStr), orderBy('metadata.deadline', 'asc'), limit(1));
             const deadlineSnap = await getDocs(qDeadline);
             
@@ -121,7 +115,6 @@ const UserDashboardPage = () => {
     fetchUserData();
   }, [user]);
 
-  // Formatear tiempo restante
   const getTimeRemaining = (date) => {
       if (!date) return 'Sin pendientes';
       const diff = date - new Date();
@@ -132,7 +125,7 @@ const UserDashboardPage = () => {
   };
 
   return (
-    <DashboardLayout isAdmin={false}>
+    <>
       {/* 1. Header de Bienvenida con Gradiente */}
       <div className="mb-8 bg-gradient-to-r from-emerald-600 to-teal-500 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
         <div className="relative z-10">
@@ -149,7 +142,6 @@ const UserDashboardPage = () => {
                 </Link>
             </div>
         </div>
-        {/* Decoración de fondo */}
         <i className="fas fa-futbol absolute -right-4 -bottom-8 text-9xl opacity-10 rotate-12"></i>
       </div>
 
@@ -157,7 +149,7 @@ const UserDashboardPage = () => {
         <div className="text-center py-10 text-gray-500">Cargando tus estadísticas...</div>
       ) : (
         <>
-            {/* 2. Grid de Métricas Mejorado */}
+            {/* 2. Grid de Métricas */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <StatCard 
                     title="Quinielas Jugadas" 
@@ -165,7 +157,6 @@ const UserDashboardPage = () => {
                     color="emerald" 
                     icon="fas fa-ticket-alt"
                 />
-                
                 <StatCard 
                     title="Puntos Totales" 
                     value={stats.totalPoints} 
@@ -173,7 +164,6 @@ const UserDashboardPage = () => {
                     icon="fas fa-star"
                     trend="Acumulados"
                 />
-
                 <StatCard 
                     title="En Juego" 
                     value={stats.activeQuinielasCount} 
@@ -181,7 +171,6 @@ const UserDashboardPage = () => {
                     icon="fas fa-running"
                     trend="Esperando resultados"
                 />
-
                 <StatCard 
                     title="Próximo Cierre" 
                     value={stats.nextDeadline ? stats.nextDeadline.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--'} 
@@ -193,8 +182,6 @@ const UserDashboardPage = () => {
 
             {/* 3. Sección Dividida: Actividad Reciente */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
-                {/* Columna Izquierda: Actividad Reciente */}
                 <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-xl font-bold text-gray-800">Actividad Reciente</h3>
@@ -227,7 +214,6 @@ const UserDashboardPage = () => {
                     </div>
                 </div>
 
-                {/* Columna Derecha: Tips o Info */}
                 <div className="bg-indigo-50 rounded-xl p-6 border border-indigo-100">
                     <h3 className="text-indigo-900 font-bold mb-3">¿Sabías que?</h3>
                     <p className="text-indigo-700 text-sm mb-4">
@@ -235,11 +221,10 @@ const UserDashboardPage = () => {
                     </p>
                     <Link to="/dashboard/user/history" className="text-sm font-bold text-indigo-600 hover:underline">Ir al Ranking &rarr;</Link>
                 </div>
-
             </div>
         </>
       )}
-    </DashboardLayout>
+    </>
   );
 };
 
