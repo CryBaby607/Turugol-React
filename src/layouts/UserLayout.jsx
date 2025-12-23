@@ -10,7 +10,6 @@ const UserLayout = () => {
 
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
-    // Enlaces EXCLUSIVOS de Usuario
     const links = [
         { path: '/dashboard/user', name: 'Mis Quinielas', icon: 'fas fa-list-alt' },
         { path: '/dashboard/user/available-quinielas', name: 'Jugar Quiniela', icon: 'fas fa-futbol' }, 

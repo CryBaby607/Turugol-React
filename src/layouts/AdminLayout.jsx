@@ -10,7 +10,6 @@ const AdminLayout = () => {
 
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
-    // Enlaces EXCLUSIVOS de Administrador
     const links = [
         { path: '/dashboard/admin', name: 'Panel de Control', icon: 'fas fa-th-large' },
         { path: '/dashboard/admin/create', name: 'Nueva Quiniela', icon: 'fas fa-plus-circle' },
@@ -96,7 +95,6 @@ const AdminLayout = () => {
                 </header>
                 
                 <main className="flex-grow p-4 md:p-8 overflow-y-auto custom-scrollbar">
-                    {/* Aquí se renderizarán las rutas hijas */}
                     <Outlet />
                 </main>
             </div>
