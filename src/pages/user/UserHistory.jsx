@@ -19,24 +19,30 @@ const UserHistory = () => {
                 const user = auth.currentUser;
                 if (!user) return;
 
+                // CORRECCIÓN: Consulta limpia usando 'createdAt' y ordenando directamente en Firestore
                 const q = query(
                     collection(db, 'userEntries'), 
                     where('userId', '==', user.uid),
                     orderBy('createdAt', 'desc')
                 );
                 
-                // Nota: Si 'submittedAt' no existe en tus docs antiguos, usa 'createdAt'
-                // O asegúrate de que PlayQuiniela guarde submittedAt.
-                // Si da error de index, ordena en cliente:
-                const querySnapshot = await getDocs(query(collection(db, 'userEntries'), where('userId', '==', user.uid)));
+                const querySnapshot = await getDocs(q);
                 const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                
-                // Ordenamiento manual por fecha (más seguro sin index compuesto)
-                data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                 
                 setParticipaciones(data);
             } catch (error) {
                 console.error("Error cargando historial:", error);
+                // Fallback: Si falla el índice, intentamos sin ordenamiento (solo por seguridad)
+                if (error.code === 'failed-precondition') {
+                    console.warn("Falta índice compuesto. Cargando sin orden y ordenando en cliente.");
+                    try {
+                         const qFallback = query(collection(db, 'userEntries'), where('userId', '==', auth.currentUser.uid));
+                         const snapFallback = await getDocs(qFallback);
+                         const dataFallback = snapFallback.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                         dataFallback.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                         setParticipaciones(dataFallback);
+                    } catch(e) { console.error(e) }
+                }
             } finally {
                 setLoading(false);
             }

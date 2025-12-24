@@ -58,29 +58,56 @@ const UserDashboardPage = () => {
         if (!user) return;
 
         try {
-            // 1. Obtener Participaciones del Usuario
+            // ---------------------------------------------------------
+            // 1. OBTENER PARTICIPACIONES (Lógica Robusta "Todoterreno")
+            // ---------------------------------------------------------
+            
+            // Paso A: Traer TODO sin ordenar en base de datos para evitar errores de índices
             const partRef = collection(db, 'userEntries');
-            const q = query(partRef, where('userId', '==', user.uid), orderBy('submittedAt', 'desc'));
+            const q = query(partRef, where('userId', '==', user.uid));
             const partSnap = await getDocs(q);
             
+            // Paso B: Procesar datos en memoria
+            let allEntries = [];
             let points = 0;
             let activeCount = 0;
-            const history = [];
 
             partSnap.forEach(doc => {
                 const data = doc.data();
+                
+                // DETECCIÓN INTELIGENTE DE FECHA:
+                // Busca 'createdAt', si no existe busca 'submittedAt', si no usa fecha actual.
+                const fechaReal = data.createdAt || data.submittedAt || new Date().toISOString();
+
+                // Sumar puntos
                 points += (data.puntos || 0);
                 
+                // Contar activas (Si no está finalizada, cuenta como activa)
                 if (data.status !== 'finalized') {
                     activeCount++;
                 }
 
-                if (history.length < 3) {
-                    history.push({ id: doc.id, ...data });
-                }
+                // Guardamos la entrada con una propiedad extra 'displayDate' para facilitar el uso
+                allEntries.push({ 
+                    id: doc.id, 
+                    ...data,
+                    displayDate: fechaReal 
+                });
             });
 
-            // 2. Obtener Próximo Cierre
+            // Paso C: Ordenar en Javascript (Del más reciente al más antiguo)
+            allEntries.sort((a, b) => {
+                const dateA = new Date(a.displayDate);
+                const dateB = new Date(b.displayDate);
+                return dateB - dateA; 
+            });
+
+            // Paso D: Extraer las 3 más recientes para el historial visual
+            const history = allEntries.slice(0, 3);
+
+            // ---------------------------------------------------------
+            // 2. OBTENER PRÓXIMO CIERRE (Lógica estándar)
+            // ---------------------------------------------------------
             const quinielasRef = collection(db, 'quinielas');
             const nowStr = new Date().toISOString();
             const qDeadline = query(quinielasRef, where('metadata.deadline', '>', nowStr), orderBy('metadata.deadline', 'asc'), limit(1));
@@ -95,6 +122,7 @@ const UserDashboardPage = () => {
                 nextTitle = qData.metadata.title;
             }
 
+            // Actualizar Estado
             setStats({
                 activeQuinielasCount: activeCount,
                 totalPoints: points,
@@ -201,7 +229,8 @@ const UserDashboardPage = () => {
                                         <div>
                                             <p className="font-semibold text-gray-800">{item.quinielaName}</p>
                                             <p className="text-xs text-gray-500">
-                                                {new Date(item.submittedAt).toLocaleDateString()} • {item.status === 'finalized' ? 'Finalizado' : 'Pendiente'}
+                                                {/* Usamos displayDate que calculamos arriba para asegurar compatibilidad */}
+                                                {new Date(item.displayDate).toLocaleDateString()} • {item.status === 'finalized' ? 'Finalizado' : 'Pendiente'}
                                             </p>
                                         </div>
                                     </div>
