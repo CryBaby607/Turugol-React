@@ -7,7 +7,7 @@ const QUINIELA_BORRADORES_COLLECTION = "quinielaBorradores";
 const QUINIELAS_FINAL_COLLECTION = "quinielas";
 
 const SEASON_YEAR = 2025; 
-const MAX_FIXTURES = 1;
+const MAX_FIXTURES = 9;
 const MAX_DESCRIPTION_CHARS = 200;
 
 const DUMMY_LEAGUES = [
